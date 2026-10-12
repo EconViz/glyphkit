@@ -32,6 +32,8 @@ from glyphkit.layout import (
     TextSpan,
     TextStyle,
 )
+from glyphkit.protocols import TypographyEngine
+from glyphkit.serialization import from_data, to_data
 from glyphkit.shaping import GlyphRun, PositionedGlyph, ShapingStyle, shape_text
 from glyphkit.sources import FontSource
 from glyphkit.unicode import TextCluster, TextDirection
@@ -69,9 +71,12 @@ __all__ = [
     "TextMeasurement",
     "TextSpan",
     "TextStyle",
+    "TypographyEngine",
     "UnsupportedFeatureError",
     "VariableAxis",
+    "from_data",
     "shape_text",
+    "to_data",
 ]
 
 __version__ = "0.1.0.dev0"
