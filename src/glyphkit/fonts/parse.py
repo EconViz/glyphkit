@@ -106,6 +106,7 @@ def _font_face(font: TTFont, *, data: bytes, fingerprint: str, index: int) -> Fo
         coverage=frozenset(best_cmap),
         axes=_axes(font),
         embedding=_permission(font),
+        has_math="MATH" in font,
         names=_all_names(font),
         _data=data,
     )
