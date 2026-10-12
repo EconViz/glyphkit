@@ -9,7 +9,7 @@ from fontTools.ttLib import TTFont
 
 from glyphkit.errors import FontFormatError
 from glyphkit.fonts import FontFace
-from glyphkit.layout import Bounds
+from glyphkit.geometry import Bounds
 from glyphkit.outlines.models import (
     ClosePath,
     CubicTo,

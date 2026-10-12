@@ -6,7 +6,8 @@ from dataclasses import dataclass, replace
 
 from glyphkit.diagnostics import SourceRange
 from glyphkit.fonts import FontLibrary
-from glyphkit.layout.models import Bounds, LineLayout, Paragraph, TextLayout
+from glyphkit.geometry import Bounds
+from glyphkit.layout.models import LineLayout, Paragraph, TextLayout
 from glyphkit.shaping import GlyphExtents, GlyphRun, PositionedGlyph, shape_text
 from glyphkit.unicode import line_break_opportunities, reorder_line
 

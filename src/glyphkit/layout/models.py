@@ -8,30 +8,9 @@ from glyphkit._validation import finite, non_negative, positive
 from glyphkit.diagnostics import Diagnostic, SourceRange
 from glyphkit.errors import ConfigurationError
 from glyphkit.fonts import FaceId
+from glyphkit.geometry import Bounds
 from glyphkit.shaping import GlyphRun, ShapingStyle
 from glyphkit.unicode import TextDirection
-
-
-@dataclass(frozen=True, slots=True)
-class Bounds:
-    x_min: float
-    y_min: float
-    x_max: float
-    y_max: float
-
-    def __post_init__(self) -> None:
-        for name in ("x_min", "y_min", "x_max", "y_max"):
-            object.__setattr__(self, name, finite(getattr(self, name), name=name))
-        if self.x_max < self.x_min or self.y_max < self.y_min:
-            raise ConfigurationError("bounds maxima must not be smaller than minima")
-
-    @property
-    def width(self) -> float:
-        return self.x_max - self.x_min
-
-    @property
-    def height(self) -> float:
-        return self.y_max - self.y_min
 
 
 @dataclass(frozen=True, slots=True)

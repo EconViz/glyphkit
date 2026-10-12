@@ -1,7 +1,7 @@
 """Paragraph layout and renderer-neutral measurement."""
 
+from glyphkit.geometry import Bounds
 from glyphkit.layout.models import (
-    Bounds,
     FontUse,
     LineLayout,
     Paragraph,
