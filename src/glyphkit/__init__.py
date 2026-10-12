@@ -24,6 +24,8 @@ from glyphkit.fonts import (
     VariableAxis,
 )
 from glyphkit.sources import FontSource
+from glyphkit.shaping import GlyphRun, PositionedGlyph, ShapingStyle, shape_text
+from glyphkit.unicode import TextCluster, TextDirection
 
 __all__ = [
     "CapabilityUnavailableError",
@@ -43,11 +45,17 @@ __all__ = [
     "FontQuery",
     "FontSource",
     "GlyphKitError",
+    "GlyphRun",
     "MathSyntaxError",
     "MissingGlyphError",
+    "PositionedGlyph",
+    "ShapingStyle",
     "SourceRange",
+    "TextCluster",
+    "TextDirection",
     "UnsupportedFeatureError",
     "VariableAxis",
+    "shape_text",
 ]
 
 __version__ = "0.1.0.dev0"
