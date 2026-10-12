@@ -25,6 +25,7 @@ from glyphkit.fonts import (
 )
 from glyphkit.layout import (
     Bounds,
+    FontUse,
     LineLayout,
     Paragraph,
     TextLayout,
@@ -34,7 +35,7 @@ from glyphkit.layout import (
 )
 from glyphkit.protocols import TypographyEngine
 from glyphkit.serialization import from_data, to_data
-from glyphkit.shaping import GlyphRun, PositionedGlyph, ShapingStyle, shape_text
+from glyphkit.shaping import GlyphExtents, GlyphRun, PositionedGlyph, ShapingStyle, shape_text
 from glyphkit.sources import FontSource
 from glyphkit.unicode import TextCluster, TextDirection
 
@@ -56,6 +57,8 @@ __all__ = [
     "FontNotFoundError",
     "FontQuery",
     "FontSource",
+    "FontUse",
+    "GlyphExtents",
     "GlyphKitError",
     "GlyphRun",
     "LineLayout",

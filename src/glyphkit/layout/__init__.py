@@ -2,6 +2,7 @@
 
 from glyphkit.layout.models import (
     Bounds,
+    FontUse,
     LineLayout,
     Paragraph,
     TextLayout,
@@ -13,6 +14,7 @@ from glyphkit.layout.paragraph import layout_paragraph
 
 __all__ = [
     "Bounds",
+    "FontUse",
     "LineLayout",
     "Paragraph",
     "TextLayout",
