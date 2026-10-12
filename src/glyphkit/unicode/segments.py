@@ -5,6 +5,7 @@ from __future__ import annotations
 import unicodedata
 
 from uniseg.graphemecluster import grapheme_clusters
+from uniseg.linebreak import line_break_boundaries
 
 from glyphkit.diagnostics import SourceRange
 from glyphkit.unicode.models import TextCluster, TextDirection
@@ -28,3 +29,7 @@ def text_direction(text: str) -> TextDirection:
         if bidi in {"L", "LRE", "LRO", "LRI"}:
             return TextDirection.LTR
     return TextDirection.LTR
+
+
+def line_break_opportunities(text: str) -> tuple[int, ...]:
+    return tuple(line_break_boundaries(text))
