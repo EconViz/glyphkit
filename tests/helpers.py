@@ -34,6 +34,7 @@ def make_test_font(*, family: str = "GlyphKit Test", weight: int = 400) -> bytes
         }
     )
     builder.setupOS2(
+        fsType=0,
         sTypoAscender=800,
         sTypoDescender=-200,
         usWinAscent=800,
@@ -45,4 +46,3 @@ def make_test_font(*, family: str = "GlyphKit Test", weight: int = 400) -> bytes
     stream = BytesIO()
     builder.save(stream)
     return stream.getvalue()
-
