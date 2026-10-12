@@ -83,3 +83,11 @@ class FontLibrary:
             for face in self._faces
         )
         return FontManifest(entries, tuple(sorted(self._generic_families.items())))
+
+    def layout(self, paragraph: object) -> object:
+        """Lay out a paragraph without importing layout during font-catalog initialization."""
+        from glyphkit.layout import Paragraph, layout_paragraph
+
+        if not isinstance(paragraph, Paragraph):
+            raise TypeError("paragraph must be a glyphkit.layout.Paragraph")
+        return layout_paragraph(self, paragraph)
