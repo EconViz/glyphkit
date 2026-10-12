@@ -26,4 +26,3 @@ def positive(value: float | int, *, name: str) -> float:
     if result <= 0:
         raise ConfigurationError(f"{name} must be positive")
     return result
-

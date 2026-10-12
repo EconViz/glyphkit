@@ -70,4 +70,3 @@ def shape_span(
         text,
         tuple(glyphs),
     )
-

@@ -25,4 +25,3 @@ def test_matches_family_weight_and_generic_alias_deterministically() -> None:
 def test_unconfigured_family_never_uses_machine_fonts() -> None:
     with pytest.raises(FontNotFoundError):
         library().match(FontQuery(("Definitely Installed Somewhere",)))
-

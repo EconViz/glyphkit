@@ -72,14 +72,14 @@ def layout_paragraph(library: FontLibrary, paragraph: Paragraph) -> TextLayout:
         local_offset = 0
         for part_index, part in enumerate(parts):
             if part:
-                runs = shape_text(
+                shaped_runs = shape_text(
                     library,
                     part,
                     span.style.shaping_style(),
                     language=span.style.language,
                     script=span.style.script,
                 )
-                for run in runs:
+                for run in shaped_runs:
                     offset_run = _offset_run(run, source_offset=source_offset + local_offset)
                     for piece in _split_run(offset_run, paragraph.max_width):
                         current_width = sum(item.advance for item in raw_lines[-1])
@@ -101,20 +101,22 @@ def layout_paragraph(library: FontLibrary, paragraph: Paragraph) -> TextLayout:
     for index, raw_runs in enumerate(raw_lines):
         advance = sum(run.advance for run in raw_runs)
         available = paragraph.max_width if paragraph.max_width is not None else advance
-        alignment_x = {"start": 0.0, "center": (available - advance) / 2, "end": available - advance}[
-            paragraph.align
-        ]
+        alignment_x = {
+            "start": 0.0,
+            "center": (available - advance) / 2,
+            "end": available - advance,
+        }[paragraph.align]
         baseline = -index * line_height
         x = alignment_x
-        runs: list[GlyphRun] = []
+        placed_runs: list[GlyphRun] = []
         for run in raw_runs:
-            runs.append(_shift_run(run, x=x, y=baseline))
+            placed_runs.append(_shift_run(run, x=x, y=baseline))
             x += run.advance
         top = baseline + max_size * 0.8
         bottom = baseline - max_size * 0.2
         bounds = Bounds(alignment_x, bottom, alignment_x + advance, top)
         overflow = max(0.0, advance - available)
-        lines.append(LineLayout(tuple(runs), baseline, advance, bounds, bounds, overflow))
+        lines.append(LineLayout(tuple(placed_runs), baseline, advance, bounds, bounds, overflow))
 
     if lines:
         x_min = min(line.logical_bounds.x_min for line in lines)
@@ -127,4 +129,3 @@ def layout_paragraph(library: FontLibrary, paragraph: Paragraph) -> TextLayout:
     height = bounds.height
     vertical_overflow = max(0.0, height - paragraph.max_height) if paragraph.max_height else 0.0
     return TextLayout(text, tuple(lines), bounds, bounds, vertical_overflow=vertical_overflow)
-

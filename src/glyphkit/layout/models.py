@@ -119,4 +119,3 @@ class TextLayout:
             max((line.horizontal_overflow for line in self.lines), default=0.0),
             self.vertical_overflow,
         )
-

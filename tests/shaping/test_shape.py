@@ -13,4 +13,3 @@ def test_shapes_into_plain_immutable_glyph_values() -> None:
     assert runs[0].advance == 24
     assert tuple(glyph.cluster.start for glyph in runs[0].glyphs) == (0, 1)
     assert all(type(glyph).__module__.startswith("glyphkit") for glyph in runs[0].glyphs)
-

@@ -17,4 +17,3 @@ class TextDirection(str, Enum):
 class TextCluster:
     text: str
     source_range: SourceRange
-

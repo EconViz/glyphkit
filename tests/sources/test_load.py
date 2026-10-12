@@ -25,4 +25,3 @@ def test_missing_and_empty_sources_raise_structured_errors(tmp_path) -> None:
         snapshot_source(FontSource.path(tmp_path / "missing.ttf"))
     with pytest.raises(FontFormatError):
         snapshot_source(FontSource.bytes(b"", label="empty"))
-

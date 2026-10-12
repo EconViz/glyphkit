@@ -1,6 +1,7 @@
 """Deterministic typography data without rendering ownership."""
 
 from glyphkit.diagnostics import Diagnostic, DiagnosticSeverity, SourceRange
+from glyphkit.engine import FontLibrary
 from glyphkit.errors import (
     CapabilityUnavailableError,
     ConfigurationError,
@@ -12,7 +13,6 @@ from glyphkit.errors import (
     MissingGlyphError,
     UnsupportedFeatureError,
 )
-from glyphkit.engine import FontLibrary
 from glyphkit.fonts import (
     EmbeddingPermission,
     FaceId,
@@ -23,27 +23,35 @@ from glyphkit.fonts import (
     FontQuery,
     VariableAxis,
 )
-from glyphkit.sources import FontSource
+from glyphkit.layout import (
+    Bounds,
+    LineLayout,
+    Paragraph,
+    TextLayout,
+    TextMeasurement,
+    TextSpan,
+    TextStyle,
+)
 from glyphkit.shaping import GlyphRun, PositionedGlyph, ShapingStyle, shape_text
-from glyphkit.layout import Bounds, LineLayout, Paragraph, TextLayout, TextMeasurement, TextSpan, TextStyle
+from glyphkit.sources import FontSource
 from glyphkit.unicode import TextCluster, TextDirection
 
 __all__ = [
-    "CapabilityUnavailableError",
     "Bounds",
+    "CapabilityUnavailableError",
     "ConfigurationError",
     "Diagnostic",
     "DiagnosticSeverity",
-    "EmbeddingRestrictedError",
     "EmbeddingPermission",
+    "EmbeddingRestrictedError",
     "FaceId",
     "FontFace",
+    "FontFormatError",
     "FontLibrary",
     "FontManifest",
     "FontMatch",
-    "FontFormatError",
-    "FontNotFoundError",
     "FontMetrics",
+    "FontNotFoundError",
     "FontQuery",
     "FontSource",
     "GlyphKitError",
@@ -51,8 +59,8 @@ __all__ = [
     "LineLayout",
     "MathSyntaxError",
     "MissingGlyphError",
-    "PositionedGlyph",
     "Paragraph",
+    "PositionedGlyph",
     "ShapingStyle",
     "SourceRange",
     "TextCluster",

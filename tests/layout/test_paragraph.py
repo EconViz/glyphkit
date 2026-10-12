@@ -24,4 +24,3 @@ def test_width_constraint_wraps_without_clipping() -> None:
     layout = library.layout(Paragraph((TextSpan("AB", style),), max_width=12))
     assert len(layout.lines) == 2
     assert "".join(run.text for line in layout.lines for run in line.runs)
-

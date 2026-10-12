@@ -34,8 +34,7 @@ class FontLibrary:
         if not self._faces:
             raise ConfigurationError("font library requires at least one face")
         aliases = {
-            normalized_family(key): tuple(value)
-            for key, value in (generic_families or {}).items()
+            normalized_family(key): tuple(value) for key, value in (generic_families or {}).items()
         }
         if any(not values for values in aliases.values()):
             raise ConfigurationError("generic family aliases must not be empty")
@@ -79,7 +78,9 @@ class FontLibrary:
 
     def manifest(self) -> FontManifest:
         entries = tuple(
-            FontManifestEntry(face.id, face.family, face.subfamily, face.weight, face.width, face.slant)
+            FontManifestEntry(
+                face.id, face.family, face.subfamily, face.weight, face.width, face.slant
+            )
             for face in self._faces
         )
         return FontManifest(entries, tuple(sorted(self._generic_families.items())))
