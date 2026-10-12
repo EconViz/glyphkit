@@ -25,10 +25,12 @@ from glyphkit.fonts import (
 )
 from glyphkit.sources import FontSource
 from glyphkit.shaping import GlyphRun, PositionedGlyph, ShapingStyle, shape_text
+from glyphkit.layout import Bounds, LineLayout, Paragraph, TextLayout, TextMeasurement, TextSpan, TextStyle
 from glyphkit.unicode import TextCluster, TextDirection
 
 __all__ = [
     "CapabilityUnavailableError",
+    "Bounds",
     "ConfigurationError",
     "Diagnostic",
     "DiagnosticSeverity",
@@ -46,13 +48,19 @@ __all__ = [
     "FontSource",
     "GlyphKitError",
     "GlyphRun",
+    "LineLayout",
     "MathSyntaxError",
     "MissingGlyphError",
     "PositionedGlyph",
+    "Paragraph",
     "ShapingStyle",
     "SourceRange",
     "TextCluster",
     "TextDirection",
+    "TextLayout",
+    "TextMeasurement",
+    "TextSpan",
+    "TextStyle",
     "UnsupportedFeatureError",
     "VariableAxis",
     "shape_text",
