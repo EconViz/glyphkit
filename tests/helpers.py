@@ -6,16 +6,24 @@ from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 
 
-def make_test_font(*, family: str = "GlyphKit Test", weight: int = 400) -> bytes:
+def make_test_font(
+    *,
+    family: str = "GlyphKit Test",
+    weight: int = 400,
+    extra_codepoints: tuple[int, ...] = (),
+) -> bytes:
     units = 1000
     builder = FontBuilder(units, isTTF=True)
-    glyph_order = [".notdef", "space", "A", "B"]
+    extra_names = [f"uni{codepoint:04X}" for codepoint in extra_codepoints]
+    glyph_order = [".notdef", "space", "A", "B", *extra_names]
     builder.setupGlyphOrder(glyph_order)
-    builder.setupCharacterMap({32: "space", 65: "A", 66: "B"})
+    builder.setupCharacterMap(
+        {32: "space", 65: "A", 66: "B"} | dict(zip(extra_codepoints, extra_names, strict=True))
+    )
     glyphs = {}
     for name in glyph_order:
         pen = TTGlyphPen(None)
-        if name in {"A", "B", ".notdef"}:
+        if name != "space":
             pen.moveTo((50, 0))
             pen.lineTo((300, 700))
             pen.lineTo((550, 0))

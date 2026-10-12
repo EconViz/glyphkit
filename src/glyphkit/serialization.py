@@ -38,7 +38,7 @@ from glyphkit.outlines import (
     QuadraticTo,
     Transform2D,
 )
-from glyphkit.shaping import GlyphRun, PositionedGlyph
+from glyphkit.shaping import GlyphExtents, GlyphRun, PositionedGlyph
 from glyphkit.unicode import TextDirection
 
 JSONScalar: TypeAlias = bool | int | float | str | None
@@ -58,6 +58,7 @@ _CLASSES = (
     FontSubsetBundle,
     Fraction,
     GlyphOutline,
+    GlyphExtents,
     GlyphRun,
     Limits,
     LineLayout,
