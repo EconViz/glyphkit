@@ -17,3 +17,20 @@ class TextDirection(str, Enum):
 class TextCluster:
     text: str
     source_range: SourceRange
+
+
+@dataclass(frozen=True, slots=True)
+class BidiLevel:
+    source_index: int
+    level: int
+
+    @property
+    def direction(self) -> TextDirection:
+        return TextDirection.RTL if self.level % 2 else TextDirection.LTR
+
+
+@dataclass(frozen=True, slots=True)
+class RunSegment:
+    text: str
+    source_range: SourceRange
+    script: str

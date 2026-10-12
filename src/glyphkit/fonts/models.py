@@ -56,6 +56,7 @@ class FontFace:
     coverage: frozenset[int]
     axes: tuple[VariableAxis, ...]
     embedding: EmbeddingPermission
+    has_math: bool
     names: Mapping[int, str]
     _data: bytes = field(repr=False, compare=False)
 

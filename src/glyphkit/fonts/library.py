@@ -84,3 +84,9 @@ class FontLibrary:
             for face in self._faces
         )
         return FontManifest(entries, tuple(sorted(self._generic_families.items())))
+
+    def face(self, face_id: object) -> FontFace:
+        for face in self._faces:
+            if face.id == face_id:
+                return face
+        raise FontNotFoundError(f"face is not part of this library: {face_id!r}")
