@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+import math
+from collections.abc import Mapping
+from dataclasses import dataclass, field, replace
 from io import BytesIO
 
 from fontTools.ttLib import TTFont
@@ -25,14 +27,44 @@ from glyphkit.math.nodes import (
     Symbol,
 )
 
+OVERRIDABLE_CONSTANTS = frozenset(
+    {
+        "AxisHeight",
+        "FractionRuleThickness",
+        "FractionNumeratorShiftUp",
+        "FractionNumeratorDisplayStyleShiftUp",
+        "FractionDenominatorShiftDown",
+        "FractionDenominatorDisplayStyleShiftDown",
+        "SubscriptShiftDown",
+        "SuperscriptShiftUp",
+        "LowerLimitBaselineDropMin",
+        "UpperLimitBaselineRiseMin",
+        "RadicalVerticalGap",
+        "RadicalKernBeforeDegree",
+        "RadicalRuleThickness",
+        "OverbarVerticalGap",
+        "UnderbarVerticalGap",
+        "MatrixRowSpacing",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class MathStyle:
-    """Size, fonts and optional script-size overrides for math layout.
+    """Size, fonts and optional overrides for math layout.
 
     ``script_scale`` and ``script_script_scale`` replace the font's
     ``ScriptPercentScaleDown`` and ``ScriptScriptPercentScaleDown`` constants. Each is a
     fraction in ``(0, 1]`` of the enclosing size; ``None`` keeps the font's own value.
+
+    ``constants`` replaces other OpenType MATH constants by their OpenType name (for
+    example ``{"SuperscriptShiftUp": 0.4}``). Values are non-negative fractions of the
+    font size (em), so they do not depend on the font's units per em. Use it for fonts whose
+    MATH table is incomplete.
+
+    ``letter_slant`` selects the face used for alphabetic symbols: ``"italic"`` or
+    ``"oblique"`` picks the matching face of the same family (digits and operators stay
+    upright), which suits fonts that lack the Unicode mathematical italic alphabet.
     """
 
     size: float
@@ -40,12 +72,24 @@ class MathStyle:
     level: str = "display"
     script_scale: float | None = None
     script_script_scale: float | None = None
+    constants: Mapping[str, float] = field(default_factory=dict, hash=False)
+    letter_slant: str = "normal"
 
     def __post_init__(self) -> None:
         for name in ("script_scale", "script_script_scale"):
             value = getattr(self, name)
             if value is not None and not 0.0 < value <= 1.0:
                 raise ConfigurationError(f"{name} must be a fraction in (0, 1], got {value!r}")
+        for name, value in self.constants.items():
+            if name not in OVERRIDABLE_CONSTANTS:
+                raise ConfigurationError(f"unsupported math constant override {name!r}")
+            if not math.isfinite(value) or value < 0.0:
+                raise ConfigurationError(
+                    f"math constant override {name} must be a finite non-negative em value"
+                )
+        if self.letter_slant not in {"normal", "italic", "oblique"}:
+            raise ConfigurationError("letter_slant must be normal, italic, or oblique")
+        object.__setattr__(self, "constants", dict(self.constants))
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,8 +120,12 @@ class _MathData:
     face: FontFace
     scale: float
     display: bool
+    size: float
+    overrides: Mapping[str, float]
 
     def value(self, name: str, fallback: float) -> float:
+        if name in self.overrides:
+            return self.overrides[name] * self.size
         constants = self.font["MATH"].table.MathConstants
         record = getattr(constants, name, None)
         raw = getattr(record, "Value", record)
@@ -133,6 +181,21 @@ def _union(bounds: list[Bounds], fallback: Bounds) -> Bounds:
     )
 
 
+def _math_glyph_id(data: _MathData, box: MathBox) -> int | None:
+    """The box's glyph id when it belongs to the MATH face, else ``None``.
+
+    MATH glyph tables are indexed by glyph id of the MATH font itself, so a glyph drawn from
+    another face (for example an italic companion) must not be looked up in them.
+    """
+    layout = box.text_layout
+    if box.glyph_id is None or layout is None:
+        return None
+    for line in layout.lines:
+        for run in line.runs:
+            return box.glyph_id if run.face_id == data.face.id else None
+    return None
+
+
 def _first_glyph_id(layout: TextLayout) -> int | None:
     for line in layout.lines:
         for run in line.runs:
@@ -144,9 +207,10 @@ def _first_glyph_id(layout: TextLayout) -> int | None:
 def _text_box(
     library: FontLibrary, text: str, style: MathStyle, source_range: SourceRange
 ) -> MathBox:
+    slant = style.letter_slant if text.isalpha() else "normal"
     layout = layout_paragraph(
         library,
-        Paragraph((TextSpan(text, TextStyle(style.families, style.size)),)),
+        Paragraph((TextSpan(text, TextStyle(style.families, style.size, slant=slant)),)),
     )
     return MathBox(
         "text",
@@ -236,7 +300,7 @@ def _layout(library: FontLibrary, node: MathNode, style: MathStyle, data: _MathD
         script_style = _script_style(data, style)
         script_children = [replace(base, origin=(0.0, 0.0))]
         script_bounds = [base.bounds]
-        script_x = base.bounds.width + data.italic_correction(base.glyph_id)
+        script_x = base.bounds.width + data.italic_correction(_math_glyph_id(data, base))
         if node.subscript is not None:
             sub = _layout(library, node.subscript, script_style, data)
             origin = (script_x, -data.value("SubscriptShiftDown", style.size * 0.3))
@@ -342,7 +406,7 @@ def _layout(library: FontLibrary, node: MathNode, style: MathStyle, data: _MathD
             "underline": "_",
         }[node.kind]
         accent = _text_box(library, accent_character, style, node.source_range)
-        attachment = data.top_accent_attachment(body.glyph_id, body.bounds.width / 2)
+        attachment = data.top_accent_attachment(_math_glyph_id(data, body), body.bounds.width / 2)
         accent_origin = (
             attachment - accent.bounds.width / 2,
             body.bounds.y_max + data.value("OverbarVerticalGap", style.size * 0.1),
@@ -398,7 +462,12 @@ def layout_math(library: FontLibrary, expression: MathNode, *, style: MathStyle)
     font = TTFont(BytesIO(face.data), fontNumber=face.id.index, lazy=False)
     try:
         data = _MathData(
-            font, face, style.size / face.metrics.units_per_em, style.level == "display"
+            font,
+            face,
+            style.size / face.metrics.units_per_em,
+            style.level == "display",
+            style.size,
+            style.constants,
         )
         return _layout(library, expression, style, data)
     finally:
