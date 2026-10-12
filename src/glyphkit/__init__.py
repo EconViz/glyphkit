@@ -12,7 +12,17 @@ from glyphkit.errors import (
     MissingGlyphError,
     UnsupportedFeatureError,
 )
-from glyphkit.fonts import EmbeddingPermission, FaceId, FontFace, FontMetrics, VariableAxis
+from glyphkit.fonts import (
+    EmbeddingPermission,
+    FaceId,
+    FontFace,
+    FontLibrary,
+    FontManifest,
+    FontMatch,
+    FontMetrics,
+    FontQuery,
+    VariableAxis,
+)
 from glyphkit.sources import FontSource
 
 __all__ = [
@@ -24,9 +34,13 @@ __all__ = [
     "EmbeddingPermission",
     "FaceId",
     "FontFace",
+    "FontLibrary",
+    "FontManifest",
+    "FontMatch",
     "FontFormatError",
     "FontNotFoundError",
     "FontMetrics",
+    "FontQuery",
     "FontSource",
     "GlyphKitError",
     "MathSyntaxError",
