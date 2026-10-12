@@ -1,0 +1,81 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "glyphkit"
+version = "0.1.0.dev0"
+description = "Renderer-independent font selection, shaping, and text layout"
+requires-python = ">=3.10,<3.14"
+license = "MIT"
+dependencies = [
+  "fonttools>=4.60,<4.66; python_version < '3.11'",
+  "fonttools>=4.66,<5; python_version >= '3.11'",
+  "uharfbuzz>=0.56,<1",
+  "uniseg>=0.10,<1",
+  "python-bidi==0.6.7",
+]
+
+[project.optional-dependencies]
+portable = ["brotli>=1.1,<2"]
+complete = ["brotli>=1.1,<2"]
+
+[dependency-groups]
+dev = [
+  "hypothesis>=6.140,<7",
+  "import-linter>=2.3,<3",
+  "mypy>=1.18,<2",
+  "pytest>=8.4,<9",
+  "pytest-cov>=7,<8",
+  "ruff>=0.14,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/glyphkit"]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+packages = ["glyphkit"]
+
+[tool.importlinter]
+root_package = "glyphkit"
+
+[[tool.importlinter.contracts]]
+name = "GlyphKit does not depend on visualization or rendering packages"
+type = "forbidden"
+source_modules = ["glyphkit"]
+forbidden_modules = [
+  "bezierkit",
+  "kinetickit",
+  "matplotlib",
+  "mosaickit",
+  "plotly",
+  "utility_viz",
+]
+
+[[tool.importlinter.contracts]]
+name = "Low-level font sources remain independent"
+type = "forbidden"
+source_modules = ["glyphkit.sources"]
+forbidden_modules = [
+  "glyphkit.embedding",
+  "glyphkit.layout",
+  "glyphkit.math",
+  "glyphkit.shaping",
+  "glyphkit.unicode",
+]
