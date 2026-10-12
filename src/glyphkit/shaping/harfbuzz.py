@@ -47,6 +47,7 @@ def shape_span(
         y_advance = position.y_advance * scale
         glyphs.append(
             PositionedGlyph(
+                face.id,
                 info.codepoint,
                 SourceRange(cluster_start, cluster_end),
                 pen_x + position.x_offset * scale,
