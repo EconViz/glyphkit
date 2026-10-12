@@ -82,6 +82,7 @@ def make_math_test_font(*, family: str = "GlyphKit Math") -> bytes:
     )
     font = TTFont(BytesIO(data))
     try:
+        x_name = font.getBestCmap()[ord("x")]
         buildMathTable(
             font,
             constants={
@@ -103,8 +104,8 @@ def make_math_test_font(*, family: str = "GlyphKit Math") -> bytes:
                 "OverbarVerticalGap": 80,
                 "UnderbarVerticalGap": 80,
             },
-            italicsCorrections={"un0078": 50},
-            topAccentAttachments={"un0078": 300},
+            italicsCorrections={x_name: 50},
+            topAccentAttachments={x_name: 300},
         )
         stream = BytesIO()
         font.save(stream)
