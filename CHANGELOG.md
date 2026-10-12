@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0b1 — Unreleased
+## 1.0.0b1 — 2026-10-12
 
 First integration beta of the stable public typography contract.
 
