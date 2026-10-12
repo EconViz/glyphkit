@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `MathStyle` accepts `script_scale` and `script_script_scale` to override the font's
+  `ScriptPercentScaleDown` and `ScriptScriptPercentScaleDown` constants.
+
 ## 1.0.0b1 — 2026-10-12
 
 First integration beta of the stable public typography contract.
