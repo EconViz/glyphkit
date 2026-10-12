@@ -54,7 +54,7 @@ strict = true
 packages = ["glyphkit"]
 
 [[tool.mypy.overrides]]
-module = ["bidi.*", "fontTools.*", "uharfbuzz", "uniseg.*"]
+module = ["bidi.*", "brotli", "fontTools.*", "uharfbuzz", "uniseg.*"]
 ignore_missing_imports = true
 
 [tool.importlinter]
