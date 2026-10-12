@@ -19,7 +19,11 @@ class FontLibrary(FontCatalog):
         return layout_paragraph(self, paragraph)
 
     def outline(self, glyph: PositionedGlyph) -> GlyphOutline:
-        return extract_outline(self.face(glyph.face_id), glyph.glyph_id)
+        return extract_outline(
+            self.face(glyph.face_id),
+            glyph.glyph_id,
+            variation_coordinates=glyph.variation_coordinates,
+        )
 
     def layout_math(self, expression: MathNode, *, style: MathStyle) -> MathBox:
         return layout_math(self, expression, style=style)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from glyphkit.layout import Bounds
+from glyphkit.geometry import Bounds
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +54,7 @@ class GlyphOutline:
     commands: tuple[PathCommand, ...]
     bounds: Bounds
     units_per_em: int
+    variation_coordinates: tuple[tuple[str, float], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

@@ -11,8 +11,25 @@ from typing import Any, TypeAlias, cast
 from glyphkit.diagnostics import Diagnostic, DiagnosticSeverity, SourceRange
 from glyphkit.embedding import EmbeddingUse, FontContainer, FontSubsetBundle, PortableFont
 from glyphkit.errors import ConfigurationError
-from glyphkit.fonts import EmbeddingPermission, FaceId, FontManifest, FontManifestEntry
-from glyphkit.layout import Bounds, LineLayout, TextLayout, TextMeasurement
+from glyphkit.fonts import (
+    EmbeddingPermission,
+    FaceId,
+    FontManifest,
+    FontManifestEntry,
+    FontMetrics,
+    FontQuery,
+    VariableAxis,
+)
+from glyphkit.geometry import Bounds
+from glyphkit.layout import (
+    FontUse,
+    LineLayout,
+    Paragraph,
+    TextLayout,
+    TextMeasurement,
+    TextSpan,
+    TextStyle,
+)
 from glyphkit.math import (
     Accent,
     Delimited,
@@ -38,8 +55,8 @@ from glyphkit.outlines import (
     QuadraticTo,
     Transform2D,
 )
-from glyphkit.shaping import GlyphRun, PositionedGlyph
-from glyphkit.unicode import TextDirection
+from glyphkit.shaping import GlyphExtents, GlyphRun, PositionedGlyph, ShapingStyle
+from glyphkit.unicode import BidiLevel, RunSegment, TextCluster, TextDirection
 
 JSONScalar: TypeAlias = bool | int | float | str | None
 JSONValue: TypeAlias = JSONScalar | list["JSONValue"] | dict[str, "JSONValue"]
@@ -55,9 +72,13 @@ _CLASSES = (
     FaceId,
     FontManifest,
     FontManifestEntry,
+    FontMetrics,
+    FontQuery,
     FontSubsetBundle,
     Fraction,
+    FontUse,
     GlyphOutline,
+    GlyphExtents,
     GlyphRun,
     Limits,
     LineLayout,
@@ -70,6 +91,7 @@ _CLASSES = (
     Polyline,
     PortableFont,
     PositionedGlyph,
+    Paragraph,
     QuadraticTo,
     Root,
     Script,
@@ -78,7 +100,14 @@ _CLASSES = (
     Symbol,
     TextLayout,
     TextMeasurement,
+    TextSpan,
+    TextStyle,
     Transform2D,
+    VariableAxis,
+    BidiLevel,
+    RunSegment,
+    ShapingStyle,
+    TextCluster,
 )
 _ENUMS = (DiagnosticSeverity, EmbeddingPermission, EmbeddingUse, FontContainer, TextDirection)
 _CLASS_REGISTRY = {item.__name__: item for item in _CLASSES}
@@ -118,7 +147,10 @@ def _decode(value: JSONValue) -> object:
         encoded = value["$bytes"]
         if not isinstance(encoded, str):
             raise ConfigurationError("invalid base64 payload")
-        return base64.b64decode(encoded, validate=True)
+        try:
+            return base64.b64decode(encoded, validate=True)
+        except ValueError as exc:
+            raise ConfigurationError("invalid base64 payload") from exc
     if "$enum" in value:
         enum_name, enum_value = value["$enum"], value.get("value")
         if not isinstance(enum_name, str) or not isinstance(enum_value, str):
@@ -137,7 +169,10 @@ def _decode(value: JSONValue) -> object:
         pairs = value["$mapping"]
         if not isinstance(pairs, list):
             raise ConfigurationError("invalid mapping payload")
-        return {_decode(pair[0]): _decode(pair[1]) for pair in pairs if isinstance(pair, list)}
+        if any(not isinstance(pair, list) or len(pair) != 2 for pair in pairs):
+            raise ConfigurationError("invalid mapping entry")
+        decoded_pairs = cast(list[list[JSONValue]], pairs)
+        return {_decode(pair[0]): _decode(pair[1]) for pair in decoded_pairs}
     kind = value.get("$type")
     if not isinstance(kind, str):
         return {key: _decode(item) for key, item in value.items()}
@@ -145,7 +180,14 @@ def _decode(value: JSONValue) -> object:
     if registered is None:
         raise ConfigurationError(f"unknown serialized type: {kind}")
     target = cast(type[Any], registered)
-    return target(**{key: _decode(item) for key, item in value.items() if key != "$type"})
+    accepted = {field.name for field in fields(target) if field.init}
+    decoded = {
+        key: _decode(item) for key, item in value.items() if key != "$type" and key in accepted
+    }
+    try:
+        return target(**decoded)
+    except (TypeError, ValueError) as exc:
+        raise ConfigurationError(f"invalid serialized {kind} value") from exc
 
 
 def to_data(value: object) -> dict[str, JSONValue]:

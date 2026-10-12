@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from glyphkit._validation import positive
+from glyphkit._validation import finite, positive
 from glyphkit.diagnostics import Diagnostic, SourceRange
 from glyphkit.fonts import FaceId
 from glyphkit.unicode import TextDirection
@@ -19,9 +19,25 @@ class ShapingStyle:
     slant: str = "normal"
     axes: tuple[tuple[str, float], ...] = ()
     features: tuple[tuple[str, int], ...] = ()
+    letter_spacing: float = 0.0
+    word_spacing: float = 0.0
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "size", positive(self.size, name="font size"))
+        object.__setattr__(
+            self, "letter_spacing", finite(self.letter_spacing, name="letter spacing")
+        )
+        object.__setattr__(self, "word_spacing", finite(self.word_spacing, name="word spacing"))
+
+
+@dataclass(frozen=True, slots=True)
+class GlyphExtents:
+    """Glyph ink bounds in the run's logical coordinate system."""
+
+    x_min: float
+    y_min: float
+    x_max: float
+    y_max: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +51,8 @@ class PositionedGlyph:
     y_advance: float
     x_offset: float
     y_offset: float
+    ink_bounds: GlyphExtents | None = None
+    variation_coordinates: tuple[tuple[str, float], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +67,8 @@ class GlyphRun:
     text: str
     glyphs: tuple[PositionedGlyph, ...]
     diagnostics: tuple[Diagnostic, ...] = ()
+    variation_coordinates: tuple[tuple[str, float], ...] = ()
+    bidi_level: int = 0
 
     @property
     def advance(self) -> float:
