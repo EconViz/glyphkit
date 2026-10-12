@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from types import MappingProxyType
 
 from glyphkit.errors import ConfigurationError, FontNotFoundError
 from glyphkit.fonts.match import match_face, normalized_family
 from glyphkit.fonts.models import (
+    FaceId,
     FontFace,
     FontManifest,
     FontManifestEntry,
@@ -84,6 +85,25 @@ class FontLibrary:
             for face in self._faces
         )
         return FontManifest(entries, tuple(sorted(self._generic_families.items())))
+
+    @classmethod
+    def from_manifest(
+        cls,
+        manifest: FontManifest,
+        *,
+        resolver: Callable[[FaceId], FontSource],
+        strict: bool = True,
+    ) -> FontLibrary:
+        faces: list[FontFace] = []
+        for entry in manifest.faces:
+            resolved = load_faces(resolver(entry.face_id))
+            matching = next((face for face in resolved if face.id == entry.face_id), None)
+            if matching is None:
+                raise ConfigurationError(
+                    f"resolved bytes do not match manifest face {entry.face_id!r}"
+                )
+            faces.append(matching)
+        return cls(faces, generic_families=dict(manifest.generic_families), strict=strict)
 
     def face(self, face_id: object) -> FontFace:
         for face in self._faces:

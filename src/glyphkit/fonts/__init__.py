@@ -13,6 +13,7 @@ from glyphkit.fonts.models import (
     VariableAxis,
 )
 from glyphkit.fonts.parse import load_faces
+from glyphkit.fonts.system import PlatformFontProvider, SystemFontProvider, discover_system_fonts
 
 __all__ = [
     "EmbeddingPermission",
@@ -24,6 +25,9 @@ __all__ = [
     "FontMatch",
     "FontMetrics",
     "FontQuery",
+    "PlatformFontProvider",
+    "SystemFontProvider",
     "VariableAxis",
+    "discover_system_fonts",
     "load_faces",
 ]

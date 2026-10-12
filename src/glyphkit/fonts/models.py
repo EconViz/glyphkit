@@ -113,3 +113,4 @@ class FontManifestEntry:
 class FontManifest:
     faces: tuple[FontManifestEntry, ...]
     generic_families: tuple[tuple[str, tuple[str, ...]], ...]
+    diagnostics: tuple[Diagnostic, ...] = ()
