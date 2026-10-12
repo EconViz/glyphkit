@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from glyphkit.embedding import EmbeddingUse, FontContainer, FontSubsetBundle, subset_layout
 from glyphkit.fonts.library import FontLibrary as FontCatalog
 from glyphkit.layout import Paragraph, TextLayout, layout_paragraph
 from glyphkit.math import MathBox, MathNode, MathStyle, layout_math
@@ -22,3 +23,19 @@ class FontLibrary(FontCatalog):
 
     def layout_math(self, expression: MathNode, *, style: MathStyle) -> MathBox:
         return layout_math(self, expression, style=style)
+
+    def subset(
+        self,
+        layout: TextLayout,
+        *,
+        embedding_use: EmbeddingUse,
+        container: FontContainer = FontContainer.SFNT,
+        allow_unknown: bool = False,
+    ) -> FontSubsetBundle:
+        return subset_layout(
+            self,
+            layout,
+            embedding_use=embedding_use,
+            container=container,
+            allow_unknown=allow_unknown,
+        )
