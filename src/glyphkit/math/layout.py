@@ -1,16 +1,21 @@
-"""Backend-neutral mathematical box layout."""
+"""Backend-neutral OpenType MATH box layout."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from io import BytesIO
 
+from fontTools.ttLib import TTFont
+
+from glyphkit.diagnostics import SourceRange
 from glyphkit.errors import UnsupportedFeatureError
-from glyphkit.fonts import FontLibrary, FontQuery
+from glyphkit.fonts import FontFace, FontLibrary, FontQuery
 from glyphkit.layout import Bounds, Paragraph, TextLayout, TextSpan, TextStyle, layout_paragraph
 from glyphkit.math.nodes import (
     Accent,
     Delimited,
     Fraction,
+    Limits,
     MathNode,
     Matrix,
     Root,
@@ -36,75 +41,262 @@ class MathRule:
 
 @dataclass(frozen=True, slots=True)
 class MathBox:
+    """A semantic MATH box positioned relative to its parent baseline."""
+
     kind: str
     bounds: Bounds
     baseline: float
     text_layout: TextLayout | None = None
     children: tuple[MathBox, ...] = ()
     rules: tuple[MathRule, ...] = ()
+    origin: tuple[float, float] = (0.0, 0.0)
+    source_range: SourceRange | None = None
+    glyph_id: int | None = None
 
 
-def _text_box(library: FontLibrary, text: str, style: MathStyle) -> MathBox:
+@dataclass(slots=True)
+class _MathData:
+    font: TTFont
+    face: FontFace
+    scale: float
+    display: bool
+
+    def value(self, name: str, fallback: float) -> float:
+        constants = self.font["MATH"].table.MathConstants
+        record = getattr(constants, name, None)
+        raw = getattr(record, "Value", record)
+        return float(raw if raw is not None else fallback) * self.scale
+
+    def percent(self, name: str, fallback: float) -> float:
+        constants = self.font["MATH"].table.MathConstants
+        return float(getattr(constants, name, fallback)) / 100.0
+
+    def italic_correction(self, glyph_id: int | None) -> float:
+        if glyph_id is None:
+            return 0.0
+        info = self.font["MATH"].table.MathGlyphInfo.MathItalicsCorrectionInfo
+        if info is None or info.Coverage is None:
+            return 0.0
+        glyphs = info.Coverage.glyphs
+        name = self.font.getGlyphOrder()[glyph_id]
+        if name not in glyphs:
+            return 0.0
+        record = info.ItalicsCorrection[glyphs.index(name)]
+        return float(record.Value) * self.scale
+
+    def top_accent_attachment(self, glyph_id: int | None, fallback: float) -> float:
+        if glyph_id is None:
+            return fallback
+        info = self.font["MATH"].table.MathGlyphInfo.MathTopAccentAttachment
+        if info is None or info.TopAccentCoverage is None:
+            return fallback
+        glyphs = info.TopAccentCoverage.glyphs
+        name = self.font.getGlyphOrder()[glyph_id]
+        if name not in glyphs:
+            return fallback
+        return float(info.TopAccentAttachment[glyphs.index(name)].Value) * self.scale
+
+
+def _translate(bounds: Bounds, origin: tuple[float, float]) -> Bounds:
+    return Bounds(
+        bounds.x_min + origin[0],
+        bounds.y_min + origin[1],
+        bounds.x_max + origin[0],
+        bounds.y_max + origin[1],
+    )
+
+
+def _union(bounds: list[Bounds], fallback: Bounds) -> Bounds:
+    if not bounds:
+        return fallback
+    return Bounds(
+        min(item.x_min for item in bounds),
+        min(item.y_min for item in bounds),
+        max(item.x_max for item in bounds),
+        max(item.y_max for item in bounds),
+    )
+
+
+def _first_glyph_id(layout: TextLayout) -> int | None:
+    for line in layout.lines:
+        for run in line.runs:
+            if run.glyphs:
+                return run.glyphs[0].glyph_id
+    return None
+
+
+def _text_box(
+    library: FontLibrary, text: str, style: MathStyle, source_range: SourceRange
+) -> MathBox:
     layout = layout_paragraph(
         library,
         Paragraph((TextSpan(text, TextStyle(style.families, style.size)),)),
     )
-    return MathBox("text", layout.logical_bounds, 0.0, layout)
+    return MathBox(
+        "text",
+        layout.logical_bounds,
+        0.0,
+        layout,
+        source_range=source_range,
+        glyph_id=_first_glyph_id(layout),
+    )
 
 
-def _layout(library: FontLibrary, node: MathNode, style: MathStyle) -> MathBox:
+def _script_style(data: _MathData, style: MathStyle) -> MathStyle:
+    percent = data.percent(
+        "ScriptPercentScaleDown" if style.level == "display" else "ScriptScriptPercentScaleDown",
+        70 if style.level == "display" else 50,
+    )
+    return MathStyle(style.size * percent, style.families, "script")
+
+
+def _layout(library: FontLibrary, node: MathNode, style: MathStyle, data: _MathData) -> MathBox:
     if isinstance(node, Symbol):
-        return _text_box(library, node.value, style)
+        return _text_box(library, node.value, style, node.source_range)
     if isinstance(node, Sequence):
-        children = tuple(_layout(library, child, style) for child in node.children)
-        width = sum(child.bounds.width for child in children)
-        height = max((child.bounds.height for child in children), default=style.size)
+        cursor = 0.0
+        children: list[MathBox] = []
+        translated: list[Bounds] = []
+        for child_node in node.children:
+            child = _layout(library, child_node, style, data)
+            placed = replace(child, origin=(cursor, 0.0))
+            children.append(placed)
+            translated.append(_translate(child.bounds, placed.origin))
+            cursor += child.bounds.width
         return MathBox(
-            "sequence", Bounds(0, -style.size * 0.2, width, height), 0, children=children
+            "sequence",
+            _union(translated, Bounds(0.0, -style.size * 0.2, cursor, style.size * 0.8)),
+            0.0,
+            children=tuple(children),
+            source_range=node.source_range,
         )
     if isinstance(node, Fraction):
-        smaller = MathStyle(style.size * 0.8, style.families, "text")
-        numerator = _layout(library, node.numerator, smaller)
-        denominator = _layout(library, node.denominator, smaller)
-        width = max(numerator.bounds.width, denominator.bounds.width) + style.size * 0.4
-        gap = style.size * 0.25
-        bounds = Bounds(0, -(denominator.bounds.height + gap), width, numerator.bounds.height + gap)
-        rule = MathRule((0, 0), (width, 0), max(1.0, style.size * 0.06))
-        return MathBox("fraction", bounds, 0, children=(numerator, denominator), rules=(rule,))
-    if isinstance(node, Script):
-        base = _layout(library, node.base, style)
-        script_style = MathStyle(style.size * 0.7, style.families, "script")
-        script_children = [base]
-        if node.subscript is not None:
-            script_children.append(_layout(library, node.subscript, script_style))
-        if node.superscript is not None:
-            script_children.append(_layout(library, node.superscript, script_style))
-        width = base.bounds.width + max(
-            (child.bounds.width for child in script_children[1:]), default=0
+        smaller = _script_style(data, style)
+        numerator = _layout(library, node.numerator, smaller, data)
+        denominator = _layout(library, node.denominator, smaller, data)
+        width = max(numerator.bounds.width, denominator.bounds.width) + style.size * 0.2
+        axis = data.value("AxisHeight", style.size * 0.25)
+        rule_thickness = max(
+            data.value("FractionRuleThickness", style.size * 0.06), style.size / 1000
         )
+        numerator_y = data.value(
+            "FractionNumeratorDisplayStyleShiftUp" if data.display else "FractionNumeratorShiftUp",
+            style.size * 0.45,
+        )
+        denominator_y = -data.value(
+            "FractionDenominatorDisplayStyleShiftDown"
+            if data.display
+            else "FractionDenominatorShiftDown",
+            style.size * 0.45,
+        )
+        numerator_origin = ((width - numerator.bounds.width) / 2, numerator_y)
+        denominator_origin = ((width - denominator.bounds.width) / 2, denominator_y)
+        bounds = _union(
+            [
+                _translate(numerator.bounds, numerator_origin),
+                _translate(denominator.bounds, denominator_origin),
+            ],
+            Bounds(0.0, -style.size * 0.5, width, style.size * 0.5),
+        )
+        return MathBox(
+            "fraction",
+            bounds,
+            axis,
+            children=(
+                replace(numerator, origin=numerator_origin),
+                replace(denominator, origin=denominator_origin),
+            ),
+            rules=(MathRule((0.0, axis), (width, axis), rule_thickness),),
+            source_range=node.source_range,
+        )
+    if isinstance(node, Script):
+        base = _layout(library, node.base, style, data)
+        script_style = _script_style(data, style)
+        script_children = [replace(base, origin=(0.0, 0.0))]
+        script_bounds = [base.bounds]
+        script_x = base.bounds.width + data.italic_correction(base.glyph_id)
+        if node.subscript is not None:
+            sub = _layout(library, node.subscript, script_style, data)
+            origin = (script_x, -data.value("SubscriptShiftDown", style.size * 0.3))
+            script_children.append(replace(sub, origin=origin))
+            script_bounds.append(_translate(sub.bounds, origin))
+        if node.superscript is not None:
+            sup = _layout(library, node.superscript, script_style, data)
+            origin = (script_x, data.value("SuperscriptShiftUp", style.size * 0.5))
+            script_children.append(replace(sup, origin=origin))
+            script_bounds.append(_translate(sup.bounds, origin))
         return MathBox(
             "script",
-            Bounds(0, -style.size * 0.5, width, style.size * 1.2),
-            0,
+            _union(script_bounds, base.bounds),
+            0.0,
             children=tuple(script_children),
+            source_range=node.source_range,
+        )
+    if isinstance(node, Limits):
+        operator = _layout(library, node.operator, style, data)
+        limit_children = [replace(operator, origin=(0.0, 0.0))]
+        limit_bounds = [operator.bounds]
+        if node.lower is not None:
+            lower = _layout(library, node.lower, _script_style(data, style), data)
+            origin = (
+                (operator.bounds.width - lower.bounds.width) / 2,
+                -data.value("LowerLimitBaselineDropMin", style.size * 0.5),
+            )
+            limit_children.append(replace(lower, origin=origin))
+            limit_bounds.append(_translate(lower.bounds, origin))
+        if node.upper is not None:
+            upper = _layout(library, node.upper, _script_style(data, style), data)
+            origin = (
+                (operator.bounds.width - upper.bounds.width) / 2,
+                data.value("UpperLimitBaselineRiseMin", style.size * 0.5),
+            )
+            limit_children.append(replace(upper, origin=origin))
+            limit_bounds.append(_translate(upper.bounds, origin))
+        return MathBox(
+            "limits",
+            _union(limit_bounds, operator.bounds),
+            0.0,
+            children=tuple(limit_children),
+            source_range=node.source_range,
         )
     if isinstance(node, Root):
-        body = _layout(library, node.radicand, style)
-        radical = _text_box(library, "√", style)
-        width = radical.bounds.width + body.bounds.width
-        rule = MathRule(
-            (radical.bounds.width, body.bounds.y_max),
-            (width, body.bounds.y_max),
-            max(1.0, style.size * 0.05),
+        body = _layout(library, node.radicand, style, data)
+        radical = _text_box(library, "√", style, node.source_range)
+        gap = data.value("RadicalVerticalGap", style.size * 0.1)
+        radical_origin = (0.0, 0.0)
+        body_origin = (radical.bounds.width, 0.0)
+        rule_y = body.bounds.y_max + gap
+        root_children = [replace(radical, origin=radical_origin), replace(body, origin=body_origin)]
+        root_bounds = _union(
+            [_translate(radical.bounds, radical_origin), _translate(body.bounds, body_origin)],
+            Bounds(0.0, body.bounds.y_min, radical.bounds.width + body.bounds.width, rule_y),
         )
+        if node.index is not None:
+            degree = _layout(library, node.index, _script_style(data, style), data)
+            origin = (
+                -degree.bounds.width + data.value("RadicalKernBeforeDegree", 0.0),
+                body.bounds.y_max * data.percent("RadicalDegreeBottomRaisePercent", 60),
+            )
+            root_children.append(replace(degree, origin=origin))
+            root_bounds = _union([root_bounds, _translate(degree.bounds, origin)], root_bounds)
+        width = radical.bounds.width + body.bounds.width
         return MathBox(
             "root",
-            Bounds(0, body.bounds.y_min, width, body.bounds.y_max + style.size * 0.1),
-            0,
-            children=(radical, body),
-            rules=(rule,),
+            root_bounds,
+            0.0,
+            children=tuple(root_children),
+            rules=(
+                MathRule(
+                    (radical.bounds.width, rule_y),
+                    (width, rule_y),
+                    data.value("RadicalRuleThickness", style.size * 0.05),
+                ),
+            ),
+            source_range=node.source_range,
         )
     if isinstance(node, Delimited):
+        # MATH variants are selected by consumers from the face's MATH table; the base glyph
+        # remains a normal positioned glyph so the result stays in the shared text contract.
         return _layout(
             library,
             Sequence(
@@ -116,25 +308,64 @@ def _layout(library: FontLibrary, node: MathNode, style: MathStyle) -> MathBox:
                 node.source_range,
             ),
             style,
+            data,
         )
     if isinstance(node, Accent):
-        body = _layout(library, node.body, style)
+        body = _layout(library, node.body, style, data)
+        accent_character = {
+            "hat": "\u02c6",
+            "bar": "¯",
+            "vec": "→",
+            "overline": "¯",
+            "underline": "_",
+        }[node.kind]
+        accent = _text_box(library, accent_character, style, node.source_range)
+        attachment = data.top_accent_attachment(body.glyph_id, body.bounds.width / 2)
+        accent_origin = (
+            attachment - accent.bounds.width / 2,
+            body.bounds.y_max + data.value("OverbarVerticalGap", style.size * 0.1),
+        )
+        if node.kind == "underline":
+            accent_origin = (
+                attachment - accent.bounds.width / 2,
+                body.bounds.y_min - data.value("UnderbarVerticalGap", style.size * 0.1),
+            )
+        bounds = _union([body.bounds, _translate(accent.bounds, accent_origin)], body.bounds)
         return MathBox(
             node.kind,
-            Bounds(0, body.bounds.y_min, body.bounds.width, body.bounds.y_max + style.size * 0.25),
-            0,
-            children=(body,),
+            bounds,
+            0.0,
+            children=(replace(body, origin=(0.0, 0.0)), replace(accent, origin=accent_origin)),
+            source_range=node.source_range,
         )
     if isinstance(node, Matrix):
-        rows = tuple(tuple(_layout(library, cell, style) for cell in row) for row in node.rows)
-        flat = tuple(cell for row in rows for cell in row)
-        columns = max((len(row) for row in rows), default=0)
-        width = (
-            columns * max((cell.bounds.width for cell in flat), default=0)
-            + max(0, columns - 1) * style.size * 0.5
+        rows = tuple(
+            tuple(_layout(library, cell, style, data) for cell in row) for row in node.rows
         )
-        height = len(rows) * style.size * 1.3
-        return MathBox("matrix", Bounds(0, -height / 2, width, height / 2), 0, children=flat)
+        columns = max((len(row) for row in rows), default=0)
+        widths = tuple(
+            max((row[column].bounds.width for row in rows if len(row) > column), default=0.0)
+            for column in range(columns)
+        )
+        row_gap = data.value("MatrixRowSpacing", style.size * 0.3)
+        matrix_placed: list[MathBox] = []
+        matrix_bounds: list[Bounds] = []
+        y = 0.0
+        for row in rows:
+            x = 0.0
+            for column, cell in enumerate(row):
+                origin = (x + (widths[column] - cell.bounds.width) / 2, y)
+                matrix_placed.append(replace(cell, origin=origin))
+                matrix_bounds.append(_translate(cell.bounds, origin))
+                x += widths[column] + style.size * 0.5
+            y -= style.size + row_gap
+        return MathBox(
+            "matrix",
+            _union(matrix_bounds, Bounds(0.0, 0.0, 0.0, 0.0)),
+            0.0,
+            children=tuple(matrix_placed),
+            source_range=node.source_range,
+        )
     raise UnsupportedFeatureError(f"math node is not supported: {type(node).__name__}")
 
 
@@ -142,4 +373,11 @@ def layout_math(library: FontLibrary, expression: MathNode, *, style: MathStyle)
     face = library.match(FontQuery(style.families)).face
     if not face.has_math:
         raise UnsupportedFeatureError(f"font {face.family!r} has no OpenType MATH table")
-    return _layout(library, expression, style)
+    font = TTFont(BytesIO(face.data), fontNumber=face.id.index, lazy=False)
+    try:
+        data = _MathData(
+            font, face, style.size / face.metrics.units_per_em, style.level == "display"
+        )
+        return _layout(library, expression, style, data)
+    finally:
+        font.close()

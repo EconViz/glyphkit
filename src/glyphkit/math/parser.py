@@ -10,6 +10,7 @@ from glyphkit.math.nodes import (
     Accent,
     Delimited,
     Fraction,
+    Limits,
     MathNode,
     Matrix,
     Root,
@@ -86,12 +87,11 @@ class _Parser:
                         raise self.error("duplicate superscript")
                     superscript = value
             if subscript is not None or superscript is not None:
-                node = Script(
-                    node,
-                    SourceRange(node.source_range.start, self.position),
-                    subscript,
-                    superscript,
-                )
+                source_range = SourceRange(node.source_range.start, self.position)
+                if isinstance(node, Symbol) and node.role == "large-operator":
+                    node = Limits(node, source_range, subscript, superscript)
+                else:
+                    node = Script(node, source_range, subscript, superscript)
             children.append(node)
         end = self.position
         if len(children) == 1:

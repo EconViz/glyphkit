@@ -64,13 +64,18 @@ def _points(command: PathCommand) -> tuple[Point, ...]:
     return ()
 
 
-def extract_outline(face: FontFace, glyph_id: int) -> GlyphOutline:
+def extract_outline(
+    face: FontFace,
+    glyph_id: int,
+    *,
+    variation_coordinates: tuple[tuple[str, float], ...] = (),
+) -> GlyphOutline:
     try:
         font = TTFont(BytesIO(face.data), fontNumber=face.id.index, lazy=False)
         glyph_order = font.getGlyphOrder()
         if not 0 <= glyph_id < len(glyph_order):
             raise FontFormatError(f"glyph id {glyph_id} is outside the font glyph order")
-        glyph_set = font.getGlyphSet()
+        glyph_set = font.getGlyphSet(location=dict(variation_coordinates))
         pen = _OutlinePen(glyph_set)
         glyph_set[glyph_order[glyph_id]].draw(pen)
         commands = tuple(pen.commands)
@@ -80,7 +85,13 @@ def extract_outline(face: FontFace, glyph_id: int) -> GlyphOutline:
             bounds = Bounds(min(xs), min(ys), max(xs), max(ys))
         else:
             bounds = Bounds(0.0, 0.0, 0.0, 0.0)
-        return GlyphOutline(glyph_id, commands, bounds, face.metrics.units_per_em)
+        return GlyphOutline(
+            glyph_id,
+            commands,
+            bounds,
+            face.metrics.units_per_em,
+            variation_coordinates,
+        )
     except (KeyError, ValueError) as exc:
         raise FontFormatError(f"cannot extract glyph {glyph_id}") from exc
     finally:

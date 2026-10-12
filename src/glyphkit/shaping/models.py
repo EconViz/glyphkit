@@ -52,6 +52,7 @@ class PositionedGlyph:
     x_offset: float
     y_offset: float
     ink_bounds: GlyphExtents | None = None
+    variation_coordinates: tuple[tuple[str, float], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

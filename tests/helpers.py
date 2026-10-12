@@ -3,7 +3,9 @@ from __future__ import annotations
 from io import BytesIO
 
 from fontTools.fontBuilder import FontBuilder
+from fontTools.otlLib.builder import buildMathTable
 from fontTools.pens.ttGlyphPen import TTGlyphPen
+from fontTools.ttLib import TTFont
 
 
 def make_test_font(
@@ -56,3 +58,56 @@ def make_test_font(
     stream = BytesIO()
     builder.save(stream)
     return stream.getvalue()
+
+
+def make_math_test_font(*, family: str = "GlyphKit Math") -> bytes:
+    """Create a deterministic test-only font with a real OpenType MATH table."""
+
+    data = make_test_font(
+        family=family,
+        extra_codepoints=(
+            ord("x"),
+            ord("y"),
+            ord("1"),
+            ord("2"),
+            ord("√"),
+            ord("∑"),
+            ord("\u02c6"),
+            ord("¯"),
+            ord("→"),
+            ord("_"),
+            ord("("),
+            ord(")"),
+        ),
+    )
+    font = TTFont(BytesIO(data))
+    try:
+        buildMathTable(
+            font,
+            constants={
+                "AxisHeight": 250,
+                "FractionRuleThickness": 60,
+                "FractionNumeratorShiftUp": 450,
+                "FractionNumeratorDisplayStyleShiftUp": 550,
+                "FractionDenominatorShiftDown": 450,
+                "FractionDenominatorDisplayStyleShiftDown": 550,
+                "ScriptPercentScaleDown": 70,
+                "ScriptScriptPercentScaleDown": 50,
+                "SubscriptShiftDown": 250,
+                "SuperscriptShiftUp": 400,
+                "UpperLimitBaselineRiseMin": 500,
+                "LowerLimitBaselineDropMin": 500,
+                "RadicalVerticalGap": 80,
+                "RadicalRuleThickness": 50,
+                "RadicalDegreeBottomRaisePercent": 60,
+                "OverbarVerticalGap": 80,
+                "UnderbarVerticalGap": 80,
+            },
+            italicsCorrections={"un0078": 50},
+            topAccentAttachments={"un0078": 300},
+        )
+        stream = BytesIO()
+        font.save(stream)
+        return stream.getvalue()
+    finally:
+        font.close()

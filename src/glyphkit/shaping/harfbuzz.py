@@ -76,6 +76,7 @@ def shape_span(
                 position.x_offset * scale,
                 position.y_offset * scale,
                 ink_bounds,
+                coordinates,
             )
         )
         pen_x += x_advance
@@ -106,6 +107,7 @@ def shape_span(
                 glyph.x_offset,
                 glyph.y_offset,
                 glyph.ink_bounds,
+                glyph.variation_coordinates,
             )
     return GlyphRun(
         face.id,

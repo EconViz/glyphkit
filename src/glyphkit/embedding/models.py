@@ -30,6 +30,7 @@ class PortableFont:
     container: FontContainer
     mime_type: str
     data: bytes
+    variation_coordinates: tuple[tuple[str, float], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

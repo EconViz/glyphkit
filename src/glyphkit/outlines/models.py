@@ -54,6 +54,7 @@ class GlyphOutline:
     commands: tuple[PathCommand, ...]
     bounds: Bounds
     units_per_em: int
+    variation_coordinates: tuple[tuple[str, float], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
