@@ -8,6 +8,7 @@ from io import BytesIO
 
 from fontTools.subset import Options, Subsetter
 from fontTools.ttLib import TTFont
+from fontTools.varLib.instancer import instantiateVariableFont
 
 from glyphkit.diagnostics import Diagnostic
 from glyphkit.embedding.models import (
@@ -22,14 +23,25 @@ from glyphkit.fonts import FaceId, FontLibrary
 from glyphkit.layout import TextLayout
 
 
-def _tag(face_id: FaceId, glyph_ids: tuple[int, ...]) -> str:
-    material = f"{face_id.fingerprint}:{face_id.index}:{','.join(map(str, glyph_ids))}".encode()
+def _tag(
+    face_id: FaceId,
+    glyph_ids: tuple[int, ...],
+    variation_coordinates: tuple[tuple[str, float], ...],
+) -> str:
+    axes = ",".join(f"{tag}={value:.12g}" for tag, value in variation_coordinates)
+    material = (
+        f"{face_id.fingerprint}:{face_id.index}:{','.join(map(str, glyph_ids))}:{axes}".encode()
+    )
     digest = hashlib.sha256(material).digest()
     return "".join(chr(65 + value % 26) for value in digest[:6])
 
 
 def _subset_bytes(
-    face_data: bytes, face_index: int, glyph_ids: tuple[int, ...], container: FontContainer
+    face_data: bytes,
+    face_index: int,
+    glyph_ids: tuple[int, ...],
+    container: FontContainer,
+    variation_coordinates: tuple[tuple[str, float], ...],
 ) -> bytes:
     if container is FontContainer.WOFF2:
         try:
@@ -40,6 +52,8 @@ def _subset_bytes(
             ) from exc
     try:
         font = TTFont(BytesIO(face_data), fontNumber=face_index, recalcTimestamp=False)
+        if variation_coordinates and "fvar" in font:
+            instantiateVariableFont(font, dict(variation_coordinates), inplace=True)
         options = Options()
         options.recalc_timestamp = False
         options.canonical_order = True
@@ -71,18 +85,19 @@ def subset_layout(
     container: FontContainer = FontContainer.SFNT,
     allow_unknown: bool = False,
 ) -> FontSubsetBundle:
-    used: dict[FaceId, set[int]] = defaultdict(set)
+    used: dict[tuple[FaceId, tuple[tuple[str, float], ...]], set[int]] = defaultdict(set)
     for line in layout.lines:
         for run in line.runs:
-            used[run.face_id].update(glyph.glyph_id for glyph in run.glyphs)
+            for glyph in run.glyphs:
+                used[(run.face_id, glyph.variation_coordinates)].add(glyph.glyph_id)
     fonts: list[PortableFont] = []
     diagnostics: list[Diagnostic] = []
-    for face_id in sorted(used):
+    for face_id, coordinates in sorted(used):
         face = library.face(face_id)
         diagnostics.extend(check_embedding(face, embedding_use, allow_unknown=allow_unknown))
-        glyph_ids = tuple(sorted(used[face_id] | {0}))
-        tag = _tag(face_id, glyph_ids)
-        data = _subset_bytes(face.data, face.id.index, glyph_ids, container)
+        glyph_ids = tuple(sorted(used[(face_id, coordinates)] | {0}))
+        tag = _tag(face_id, glyph_ids, coordinates)
+        data = _subset_bytes(face.data, face.id.index, glyph_ids, container, coordinates)
         fonts.append(
             PortableFont(
                 face.id,
@@ -93,6 +108,7 @@ def subset_layout(
                 container,
                 "font/woff2" if container is FontContainer.WOFF2 else "font/sfnt",
                 data,
+                coordinates,
             )
         )
     return FontSubsetBundle(tuple(fonts), tuple(diagnostics))
