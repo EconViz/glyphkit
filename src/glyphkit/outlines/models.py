@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from glyphkit.layout import Bounds
+from glyphkit.geometry import Bounds
 
 
 @dataclass(frozen=True, slots=True)

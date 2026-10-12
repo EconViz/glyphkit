@@ -85,3 +85,53 @@ forbidden_modules = [
   "glyphkit.shaping",
   "glyphkit.unicode",
 ]
+
+[[tool.importlinter.contracts]]
+name = "Font catalog remains independent of text processing"
+type = "forbidden"
+source_modules = ["glyphkit.fonts"]
+forbidden_modules = [
+  "glyphkit.embedding",
+  "glyphkit.layout",
+  "glyphkit.math",
+  "glyphkit.outlines",
+  "glyphkit.shaping",
+  "glyphkit.unicode",
+]
+
+[[tool.importlinter.contracts]]
+name = "Unicode analysis remains below font selection"
+type = "forbidden"
+source_modules = ["glyphkit.unicode"]
+forbidden_modules = [
+  "glyphkit.embedding",
+  "glyphkit.fonts",
+  "glyphkit.layout",
+  "glyphkit.math",
+  "glyphkit.outlines",
+  "glyphkit.shaping",
+]
+
+[[tool.importlinter.contracts]]
+name = "Shaping remains independent of layout and output"
+type = "forbidden"
+source_modules = ["glyphkit.shaping"]
+forbidden_modules = ["glyphkit.embedding", "glyphkit.layout", "glyphkit.math", "glyphkit.outlines"]
+
+[[tool.importlinter.contracts]]
+name = "Layout remains independent of math and embedding"
+type = "forbidden"
+source_modules = ["glyphkit.layout"]
+forbidden_modules = ["glyphkit.embedding", "glyphkit.math", "glyphkit.outlines"]
+
+[[tool.importlinter.contracts]]
+name = "Outlines remain independent of layout policy"
+type = "forbidden"
+source_modules = ["glyphkit.outlines"]
+forbidden_modules = [
+  "glyphkit.embedding",
+  "glyphkit.layout",
+  "glyphkit.math",
+  "glyphkit.shaping",
+  "glyphkit.unicode",
+]

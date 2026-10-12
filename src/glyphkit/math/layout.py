@@ -10,7 +10,8 @@ from fontTools.ttLib import TTFont
 from glyphkit.diagnostics import SourceRange
 from glyphkit.errors import UnsupportedFeatureError
 from glyphkit.fonts import FontFace, FontLibrary, FontQuery
-from glyphkit.layout import Bounds, Paragraph, TextLayout, TextSpan, TextStyle, layout_paragraph
+from glyphkit.geometry import Bounds
+from glyphkit.layout import Paragraph, TextLayout, TextSpan, TextStyle, layout_paragraph
 from glyphkit.math.nodes import (
     Accent,
     Delimited,
