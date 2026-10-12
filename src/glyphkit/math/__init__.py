@@ -1,5 +1,6 @@
 """Structured mathematical typography."""
 
+from glyphkit.math.layout import MathBox, MathRule, MathStyle, layout_math
 from glyphkit.math.nodes import (
     Accent,
     Delimited,
@@ -21,11 +22,15 @@ __all__ = [
     "ExtensionNode",
     "Fraction",
     "Limits",
+    "MathBox",
     "MathNode",
+    "MathRule",
+    "MathStyle",
     "Matrix",
     "Root",
     "Script",
     "Sequence",
     "Symbol",
+    "layout_math",
     "parse_math",
 ]
