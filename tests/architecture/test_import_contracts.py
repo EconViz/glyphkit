@@ -50,3 +50,18 @@ def test_low_level_sources_do_not_import_higher_layers() -> None:
             violations[str(path.relative_to(PACKAGE_ROOT))] = sorted(imported & forbidden)
     assert violations == {}
 
+
+def test_font_catalog_does_not_import_text_processing_layers() -> None:
+    forbidden = {"embedding", "layout", "math", "shaping", "unicode"}
+    violations: dict[str, list[str]] = {}
+    for path in (PACKAGE_ROOT / "fonts").rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        imported: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                parts = node.module.split(".")
+                if len(parts) > 1 and parts[0] == "glyphkit":
+                    imported.add(parts[1])
+        if imported & forbidden:
+            violations[str(path.relative_to(PACKAGE_ROOT))] = sorted(imported & forbidden)
+    assert violations == {}

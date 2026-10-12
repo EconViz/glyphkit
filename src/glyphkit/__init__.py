@@ -12,11 +12,11 @@ from glyphkit.errors import (
     MissingGlyphError,
     UnsupportedFeatureError,
 )
+from glyphkit.engine import FontLibrary
 from glyphkit.fonts import (
     EmbeddingPermission,
     FaceId,
     FontFace,
-    FontLibrary,
     FontManifest,
     FontMatch,
     FontMetrics,
