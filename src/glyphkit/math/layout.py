@@ -8,7 +8,7 @@ from io import BytesIO
 from fontTools.ttLib import TTFont
 
 from glyphkit.diagnostics import SourceRange
-from glyphkit.errors import UnsupportedFeatureError
+from glyphkit.errors import ConfigurationError, UnsupportedFeatureError
 from glyphkit.fonts import FontFace, FontLibrary, FontQuery
 from glyphkit.geometry import Bounds
 from glyphkit.layout import Paragraph, TextLayout, TextSpan, TextStyle, layout_paragraph
@@ -28,9 +28,24 @@ from glyphkit.math.nodes import (
 
 @dataclass(frozen=True, slots=True)
 class MathStyle:
+    """Size, fonts and optional script-size overrides for math layout.
+
+    ``script_scale`` and ``script_script_scale`` replace the font's
+    ``ScriptPercentScaleDown`` and ``ScriptScriptPercentScaleDown`` constants. Each is a
+    fraction in ``(0, 1]`` of the enclosing size; ``None`` keeps the font's own value.
+    """
+
     size: float
     families: tuple[str, ...]
     level: str = "display"
+    script_scale: float | None = None
+    script_script_scale: float | None = None
+
+    def __post_init__(self) -> None:
+        for name in ("script_scale", "script_script_scale"):
+            value = getattr(self, name)
+            if value is not None and not 0.0 < value <= 1.0:
+                raise ConfigurationError(f"{name} must be a fraction in (0, 1], got {value!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,11 +159,17 @@ def _text_box(
 
 
 def _script_style(data: _MathData, style: MathStyle) -> MathStyle:
-    percent = data.percent(
-        "ScriptPercentScaleDown" if style.level == "display" else "ScriptScriptPercentScaleDown",
-        70 if style.level == "display" else 50,
+    display = style.level == "display"
+    override = style.script_scale if display else style.script_script_scale
+    percent = (
+        override
+        if override is not None
+        else data.percent(
+            "ScriptPercentScaleDown" if display else "ScriptScriptPercentScaleDown",
+            70 if display else 50,
+        )
     )
-    return MathStyle(style.size * percent, style.families, "script")
+    return replace(style, size=style.size * percent, level="script")
 
 
 def _layout(library: FontLibrary, node: MathNode, style: MathStyle, data: _MathData) -> MathBox:
