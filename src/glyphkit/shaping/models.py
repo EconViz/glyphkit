@@ -26,6 +26,7 @@ class ShapingStyle:
 
 @dataclass(frozen=True, slots=True)
 class PositionedGlyph:
+    face_id: FaceId
     glyph_id: int
     cluster: SourceRange
     x: float
