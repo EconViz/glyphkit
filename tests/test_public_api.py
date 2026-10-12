@@ -37,4 +37,3 @@ def test_positive_rejects_zero() -> None:
 
 def test_configuration_error_belongs_to_public_hierarchy() -> None:
     assert issubclass(ConfigurationError, GlyphKitError)
-

@@ -35,4 +35,3 @@ class EmbeddingRestrictedError(GlyphKitError, PermissionError):
 
 class MathSyntaxError(GlyphKitError, ValueError):
     """Raised for unsupported or malformed structured math input."""
-

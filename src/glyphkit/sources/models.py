@@ -41,4 +41,3 @@ class FontSource:
         if not isinstance(data, bytes):
             raise ConfigurationError("font stream must return bytes")
         return cls("bytes", data, label)
-

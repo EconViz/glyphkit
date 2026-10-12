@@ -22,7 +22,9 @@ def make_test_font(*, family: str = "GlyphKit Test", weight: int = 400) -> bytes
             pen.closePath()
         glyphs[name] = pen.glyph()
     builder.setupGlyf(glyphs)
-    builder.setupHorizontalMetrics({name: (600 if name != "space" else 300, 0) for name in glyph_order})
+    builder.setupHorizontalMetrics(
+        {name: (600 if name != "space" else 300, 0) for name in glyph_order}
+    )
     builder.setupHorizontalHeader(ascent=800, descent=-200)
     builder.setupNameTable(
         {

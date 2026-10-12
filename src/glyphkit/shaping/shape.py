@@ -89,4 +89,3 @@ def shape_text(
         )
         for face, start, end, span_text in spans
     )
-

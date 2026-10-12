@@ -1,2 +1,1 @@
 """Structured mathematical typography."""
-

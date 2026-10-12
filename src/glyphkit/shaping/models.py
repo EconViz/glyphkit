@@ -52,4 +52,3 @@ class GlyphRun:
     @property
     def advance(self) -> float:
         return sum(glyph.x_advance for glyph in self.glyphs)
-

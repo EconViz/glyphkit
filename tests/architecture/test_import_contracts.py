@@ -3,7 +3,6 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-
 PACKAGE_ROOT = Path(__file__).parents[2] / "src" / "glyphkit"
 FORBIDDEN_ROOTS = {
     "bezierkit",

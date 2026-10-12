@@ -48,4 +48,3 @@ def match_face(faces: tuple[FontFace, ...], query: FontQuery) -> FontMatch | Non
                 )
             )
     return FontMatch(face, tuple(coordinates), tuple(diagnostics))
-

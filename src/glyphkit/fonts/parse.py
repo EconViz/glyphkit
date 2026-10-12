@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from io import BytesIO
-from typing import Iterable
+from typing import cast
 
 from fontTools.ttLib import TTCollection, TTFont, TTLibError
 
@@ -112,7 +113,7 @@ def _font_face(font: TTFont, *, data: bytes, fingerprint: str, index: int) -> Fo
 
 def _open_fonts(data: bytes) -> Iterable[TTFont]:
     if data[:4] == b"ttcf":
-        return TTCollection(BytesIO(data), lazy=False).fonts
+        return cast(Iterable[TTFont], TTCollection(BytesIO(data), lazy=False).fonts)
     return (TTFont(BytesIO(data), lazy=False, recalcBBoxes=False, recalcTimestamp=False),)
 
 
@@ -129,4 +130,3 @@ def load_faces(source: FontSource) -> tuple[FontFace, ...]:
     finally:
         for font in locals().get("fonts", ()):
             font.close()
-

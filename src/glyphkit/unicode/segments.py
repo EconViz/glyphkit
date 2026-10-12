@@ -28,4 +28,3 @@ def text_direction(text: str) -> TextDirection:
         if bidi in {"L", "LRE", "LRO", "LRI"}:
             return TextDirection.LTR
     return TextDirection.LTR
-

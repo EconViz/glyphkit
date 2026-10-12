@@ -38,4 +38,3 @@ class Diagnostic:
             raise ConfigurationError("diagnostic code must not be empty")
         if not self.message.strip():
             raise ConfigurationError("diagnostic message must not be empty")
-

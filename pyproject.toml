@@ -53,8 +53,13 @@ python_version = "3.10"
 strict = true
 packages = ["glyphkit"]
 
+[[tool.mypy.overrides]]
+module = ["fontTools.*", "uharfbuzz", "uniseg.*"]
+ignore_missing_imports = true
+
 [tool.importlinter]
 root_package = "glyphkit"
+include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "GlyphKit does not depend on visualization or rendering packages"
