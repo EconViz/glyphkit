@@ -84,3 +84,74 @@ def test_script_scale_must_be_a_fraction_in_zero_to_one(value: float) -> None:
         MathStyle(20, ("GlyphKit Math",), script_scale=value)
     with pytest.raises(ConfigurationError, match="script_script_scale"):
         MathStyle(20, ("GlyphKit Math",), script_script_scale=value)
+
+
+def _first_face_id(box):  # type: ignore[no-untyped-def]
+    return box.text_layout.lines[0].runs[0].face_id
+
+
+def test_constants_override_replaces_font_values_in_em() -> None:
+    library = FontLibrary.from_sources((FontSource.bytes(make_math_test_font(), label="math"),))
+    families = ("GlyphKit Math",)
+    style = MathStyle(
+        20, families, constants={"SuperscriptShiftUp": 0.35, "SubscriptShiftDown": 0.2}
+    )
+    box = layout_math(library, parse_math("x_1^2"), style=style)
+    subscript, superscript = box.children[1], box.children[2]
+    assert subscript.origin[1] == pytest.approx(-4.0)
+    assert superscript.origin[1] == pytest.approx(7.0)
+    untouched = layout_math(library, parse_math("x_1^2"), style=MathStyle(20, families))
+    assert untouched.children[2].origin[1] == pytest.approx(8.0)
+
+
+@pytest.mark.parametrize(
+    ("constants", "message"),
+    [
+        ({"NoSuchConstant": 0.1}, "NoSuchConstant"),
+        ({"SuperscriptShiftUp": -0.1}, "SuperscriptShiftUp"),
+        ({"SuperscriptShiftUp": float("nan")}, "SuperscriptShiftUp"),
+    ],
+)
+def test_constants_override_rejects_unknown_or_invalid_values(
+    constants: dict[str, float], message: str
+) -> None:
+    with pytest.raises(ConfigurationError, match=message):
+        MathStyle(20, ("GlyphKit Math",), constants=constants)
+
+
+def test_letter_slant_selects_the_italic_face_for_letters_only() -> None:
+    upright = make_math_test_font()
+    italic = _as_italic(upright)
+    library = FontLibrary.from_sources(
+        (FontSource.bytes(upright, label="up"), FontSource.bytes(italic, label="it"))
+    )
+    families = ("GlyphKit Math",)
+    plain = layout_math(library, parse_math("x2"), style=MathStyle(20, families))
+    slanted = layout_math(
+        library, parse_math("x2"), style=MathStyle(20, families, letter_slant="italic")
+    )
+    letter_plain, digit_plain = (_first_face_id(c) for c in plain.children)
+    letter_slanted, digit_slanted = (_first_face_id(c) for c in slanted.children)
+    assert letter_plain == digit_plain == digit_slanted
+    assert letter_slanted != letter_plain
+
+
+def test_letter_slant_must_be_a_known_slant() -> None:
+    with pytest.raises(ConfigurationError, match="letter_slant"):
+        MathStyle(20, ("GlyphKit Math",), letter_slant="slanted")
+
+
+def _as_italic(font_bytes: bytes) -> bytes:
+    from io import BytesIO
+
+    from fontTools.ttLib import TTFont
+
+    font = TTFont(BytesIO(font_bytes))
+    font["OS/2"].fsSelection |= 0x01
+    font["head"].macStyle |= 0x02
+    name = font["name"]
+    name.setName("GlyphKit Math Italic", 3, 3, 1, 0x409)
+    name.setName("GlyphKit Math Italic", 3, 1, 0, 0x409)
+    out = BytesIO()
+    font.save(out)
+    return out.getvalue()

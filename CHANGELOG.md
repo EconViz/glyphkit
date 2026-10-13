@@ -4,6 +4,12 @@
 
 - `MathStyle` accepts `script_scale` and `script_script_scale` to override the font's
   `ScriptPercentScaleDown` and `ScriptScriptPercentScaleDown` constants.
+- `MathStyle(constants=...)` overrides other OpenType MATH constants by name, in em, for fonts
+  whose MATH table is incomplete.
+- `MathStyle(letter_slant=...)` draws alphabetic symbols with the italic or oblique face of the
+  same family instead of requiring the Unicode mathematical italic alphabet.
+- Glyph ids from a companion face are no longer looked up in the MATH font's italic-correction
+  and accent tables.
 
 ## 1.0.0b1 — 2026-10-12
 
