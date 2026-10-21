@@ -12,6 +12,7 @@ from glyphkit.math.nodes import (
     Root,
     Script,
     Sequence,
+    Space,
     Symbol,
 )
 from glyphkit.math.parser import parse_math
@@ -30,6 +31,7 @@ __all__ = [
     "Root",
     "Script",
     "Sequence",
+    "Space",
     "Symbol",
     "layout_math",
     "parse_math",

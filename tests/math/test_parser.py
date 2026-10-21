@@ -26,3 +26,42 @@ def test_rejects_unsupported_or_malformed_input(source: str) -> None:
 def test_enforces_configurable_input_bound() -> None:
     with pytest.raises(MathSyntaxError, match="length"):
         parse_math("abcdef", max_length=5)
+
+
+def test_symbol_commands_get_their_tex_class() -> None:
+    from glyphkit.math import Sequence, Symbol
+
+    def roles(source: str) -> list[tuple[str, str]]:
+        node = parse_math(source)
+        children = node.children if isinstance(node, Sequence) else (node,)
+        return [(c.value, c.role) for c in children if isinstance(c, Symbol)]
+
+    assert roles(r"a \le b") == [("a", "ordinary"), ("\u2264", "relation"), ("b", "ordinary")]
+    assert roles(r"a \cdot b")[1] == ("\u22c5", "binary")
+    assert roles("a+b=c,d")[1::2] == [("+", "binary"), ("=", "relation"), (",", "punct")]
+    assert roles("(a)") == [("(", "open"), ("a", "ordinary"), (")", "close")]
+    assert roles(r"\infty \partial") == [("\u221e", "ordinary"), ("\u2202", "ordinary")]
+    assert roles(r"\sin")[0] == ("sin", "function")
+    assert roles(r"\mathrm{max} \text{if }x")[0] == ("max", "upright")
+    assert roles(r"\mathrm{max} \text{if }x")[1] == ("if ", "upright")
+    assert roles(r"\zeta \Psi \varepsilon") == [
+        ("\u03b6", "identifier"),
+        ("\u03a8", "identifier"),
+        ("\u03f5", "identifier"),
+    ]
+
+
+def test_spaces_and_integrals() -> None:
+    from glyphkit.math import Script, Sequence, Space
+
+    node = parse_math(r"a\,b\;c\!d\quad e")
+    assert isinstance(node, Sequence)
+    assert [c.mu for c in node.children if isinstance(c, Space)] == [3.0, 5.0, -3.0, 18.0]
+    integral = parse_math(r"\int_0^1")
+    assert isinstance(integral, Script)
+    assert integral.base.role == "integral"
+
+
+def test_unknown_commands_are_still_named_in_the_error() -> None:
+    with pytest.raises(MathSyntaxError, match=r"unsupported command \\nonsense"):
+        parse_math(r"\nonsense")
