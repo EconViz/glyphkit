@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0b3 — 2026-10-21
 
 - Math layout follows TeX's rules with the font's MATH constants. Fractions set their parts at full
   size in display style and clear the rule by the font's minimum gaps; scripts keep the minimum
