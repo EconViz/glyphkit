@@ -16,6 +16,7 @@ from glyphkit.math.nodes import (
     Root,
     Script,
     Sequence,
+    Space,
     Symbol,
 )
 
@@ -25,25 +26,193 @@ GREEK = {
     "gamma": "γ",
     "delta": "δ",
     "epsilon": "ε",
+    "varepsilon": "ϵ",
+    "zeta": "ζ",
+    "eta": "η",
     "theta": "θ",
+    "vartheta": "ϑ",
+    "iota": "ι",
+    "kappa": "κ",
     "lambda": "λ",
     "mu": "μ",
+    "nu": "ν",
+    "xi": "ξ",
     "pi": "π",
     "rho": "ρ",
+    "varrho": "ϱ",
     "sigma": "σ",
+    "varsigma": "ς",
+    "tau": "τ",
+    "upsilon": "υ",
     "phi": "φ",
+    "varphi": "ϕ",
+    "chi": "χ",
+    "psi": "ψ",
     "omega": "ω",
     "Gamma": "Γ",
     "Delta": "Δ",
     "Theta": "Θ",
     "Lambda": "Λ",
+    "Xi": "Ξ",
     "Pi": "Π",
     "Sigma": "Σ",
+    "Upsilon": "Υ",
     "Phi": "Φ",
+    "Psi": "Ψ",
     "Omega": "Ω",
 }
-OPERATORS = {"sum": "∑", "prod": "∏", "int": "∫", "lim": "lim"}
+# Large operators with limits above and below in display style.
+OPERATORS = {
+    "sum": "∑",
+    "prod": "∏",
+    "coprod": "∐",
+    "bigcup": "⋃",
+    "bigcap": "⋂",
+    "bigoplus": "⨁",
+    "bigotimes": "⨂",
+    "lim": "lim",
+    "max": "max",
+    "min": "min",
+    "sup": "sup",
+    "inf": "inf",
+    "limsup": "lim sup",
+    "liminf": "lim inf",
+}
+# Integrals take their scripts at the side, even in display style.
+INTEGRALS = {"int": "∫", "iint": "∬", "iiint": "∭", "oint": "∮"}
+# Function names are set upright with a thin space after them.
+FUNCTIONS = [
+    "sin",
+    "cos",
+    "tan",
+    "cot",
+    "sec",
+    "csc",
+    "arcsin",
+    "arccos",
+    "arctan",
+    "sinh",
+    "cosh",
+    "tanh",
+    "coth",
+    "ln",
+    "log",
+    "lg",
+    "exp",
+    "det",
+    "gcd",
+    "dim",
+    "ker",
+    "arg",
+    "deg",
+    "hom",
+    "Pr",
+]
+BINARY = {
+    "pm": "±",
+    "mp": "∓",
+    "times": "×",
+    "div": "÷",
+    "cdot": "⋅",
+    "ast": "∗",
+    "circ": "∘",
+    "bullet": "∙",
+    "cup": "∪",
+    "cap": "∩",
+    "setminus": "∖",
+    "oplus": "⊕",
+    "ominus": "⊖",
+    "otimes": "⊗",
+    "wedge": "∧",
+    "vee": "∨",
+}
+RELATIONS = {
+    "le": "≤",
+    "leq": "≤",
+    "ge": "≥",
+    "geq": "≥",
+    "ne": "≠",
+    "neq": "≠",
+    "approx": "≈",
+    "equiv": "≡",
+    "sim": "∼",
+    "simeq": "≃",
+    "cong": "≅",
+    "propto": "∝",
+    "ll": "≪",
+    "gg": "≫",
+    "in": "∈",
+    "notin": "∉",
+    "ni": "∋",
+    "subset": "⊂",
+    "supset": "⊃",
+    "subseteq": "⊆",
+    "supseteq": "⊇",
+    "to": "→",
+    "rightarrow": "→",
+    "leftarrow": "←",
+    "leftrightarrow": "↔",
+    "Rightarrow": "⇒",
+    "Leftarrow": "⇐",
+    "Leftrightarrow": "⇔",
+    "implies": "⟹",
+    "iff": "⟺",
+    "mapsto": "↦",
+    "perp": "⊥",
+    "parallel": "∥",
+    "mid": "∣",
+}
+ORDINARY = {
+    "infty": "∞",
+    "partial": "∂",
+    "nabla": "∇",
+    "forall": "∀",
+    "exists": "∃",
+    "emptyset": "∅",
+    "varnothing": "∅",
+    "ell": "ℓ",
+    "hbar": "ℏ",
+    "Re": "ℜ",
+    "Im": "ℑ",
+    "aleph": "ℵ",
+    "neg": "¬",
+    "angle": "∠",
+    "prime": "′",
+    "ldots": "…",
+    "cdots": "⋯",
+    "vdots": "⋮",
+    "ddots": "⋱",
+    "dots": "…",
+    "%": "%",
+    "&": "&",
+    "#": "#",
+    "$": "$",
+    "_": "_",
+    "{": "{",
+    "}": "}",
+}
+SPACES = {",": 3.0, ":": 4.0, ";": 5.0, "!": -3.0, " ": 6.0, "quad": 18.0, "qquad": 36.0}
+UPRIGHT = {"mathrm", "text", "textrm", "operatorname", "mbox"}
 ACCENTS = {"overline", "underline", "hat", "bar", "vec"}
+RELATION_CHARACTERS = "=<>≤≥≠≈≡∼∈→←"
+BINARY_CHARACTERS = "+−-×÷"
+OPENING = "([⟨"
+CLOSING = ")]⟩"
+PUNCTUATION = ",;"
+
+
+def _character_role(character: str) -> str:
+    if character in RELATION_CHARACTERS:
+        return "relation"
+    if character in BINARY_CHARACTERS:
+        return "binary"
+    if character in OPENING:
+        return "open"
+    if character in CLOSING:
+        return "close"
+    if character in PUNCTUATION:
+        return "punct"
+    return "ordinary"
 
 
 class _Parser:
@@ -114,6 +283,24 @@ class _Parser:
             return value
         return self.atom(depth=depth)
 
+    def raw_group(self) -> str:
+        """The text inside ``{...}`` after a command such as ``\\mathrm``, braces balanced."""
+        self.skip_space()
+        if self.position >= len(self.source) or self.source[self.position] != "{":
+            raise self.error("missing command argument")
+        depth = 0
+        start = self.position + 1
+        while self.position < len(self.source):
+            character = self.source[self.position]
+            self.position += 1
+            if character == "{":
+                depth += 1
+            elif character == "}":
+                depth -= 1
+                if depth == 0:
+                    return self.source[start : self.position - 1]
+        raise self.error("unclosed group")
+
     def command(self) -> str:
         self.position += 1
         start = self.position
@@ -131,9 +318,12 @@ class _Parser:
             return self.argument(depth=depth + 1)
         if character != "\\":
             self.position += 1
-            role = "operator" if character in "+−-=<>×÷" else "ordinary"
-            return Symbol(character, SourceRange(start, self.position), role)
+            return Symbol(character, SourceRange(start, self.position), _character_role(character))
         command = self.command()
+        if command in SPACES:
+            return Space(SPACES[command], SourceRange(start, self.position))
+        if command in UPRIGHT:
+            return Symbol(self.raw_group(), SourceRange(start, self.position), "upright")
         if command == "frac":
             numerator = self.argument(depth=depth + 1)
             denominator = self.argument(depth=depth + 1)
@@ -155,6 +345,13 @@ class _Parser:
             return Symbol(GREEK[command], SourceRange(start, self.position), "identifier")
         if command in OPERATORS:
             return Symbol(OPERATORS[command], SourceRange(start, self.position), "large-operator")
+        if command in INTEGRALS:
+            return Symbol(INTEGRALS[command], SourceRange(start, self.position), "integral")
+        if command in FUNCTIONS:
+            return Symbol(command, SourceRange(start, self.position), "function")
+        for table, role in ((BINARY, "binary"), (RELATIONS, "relation"), (ORDINARY, "ordinary")):
+            if command in table:
+                return Symbol(table[command], SourceRange(start, self.position), role)
         if command == "left":
             if self.position >= len(self.source):
                 raise self.error("missing left delimiter")

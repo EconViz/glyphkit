@@ -16,9 +16,27 @@ class MathNode(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class Symbol:
+    """One atom. ``role`` is its TeX class and decides spacing around it:
+
+    ``ordinary`` and ``identifier`` (letters, digits), ``binary`` (``+``, ``\\times``),
+    ``relation`` (``=``, ``\\le``), ``open`` and ``close`` (brackets), ``punct`` (``,``),
+    ``large-operator`` (``\\sum``, ``\\lim``: limits above and below in display style),
+    ``integral`` (``\\int``: scripts at the side), ``function`` (``\\sin``, set upright) and
+    ``upright`` (``\\mathrm`` and ``\\text``). The older role ``operator`` is read as ``binary``
+    or ``relation`` by its character.
+    """
+
     value: str
     source_range: SourceRange
     role: str = "ordinary"
+
+
+@dataclass(frozen=True, slots=True)
+class Space:
+    """Horizontal space of ``mu`` math units (1/18 em), as ``\\,`` (3), ``\\:`` (4), ``\\;`` (5)."""
+
+    mu: float
+    source_range: SourceRange
 
 
 @dataclass(frozen=True, slots=True)

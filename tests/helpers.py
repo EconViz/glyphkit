@@ -60,7 +60,9 @@ def make_test_font(
     return stream.getvalue()
 
 
-def make_math_test_font(*, family: str = "GlyphKit Math") -> bytes:
+def make_math_test_font(
+    *, family: str = "GlyphKit Math", extra_codepoints: tuple[int, ...] = ()
+) -> bytes:
     """Create a deterministic test-only font with a real OpenType MATH table."""
 
     data = make_test_font(
@@ -78,6 +80,12 @@ def make_math_test_font(*, family: str = "GlyphKit Math") -> bytes:
             ord("_"),
             ord("("),
             ord(")"),
+            ord("="),
+            ord("+"),
+            ord(","),
+            ord("-"),
+            ord("∫"),
+            *extra_codepoints,
         ),
     )
     font = TTFont(BytesIO(data))
