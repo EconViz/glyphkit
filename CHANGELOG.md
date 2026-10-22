@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- A font is parsed once and kept (the eight most recently used, keyed by the SHA-256 of the font
+  bytes and the face index), instead of once per glyph outline and once per math layout. With TeX
+  Gyre Pagella Math one figure's 15 glyph outlines and four math layouts took about 210 ms and now
+  take one parse; a larger font gains more. Outlines and layouts are identical. The parsed font
+  is shared under a lock, so concurrent reads stay deterministic.
+
 ## 1.0.0b3 — 2026-10-21
 
 - Math layout follows TeX's rules with the font's MATH constants. Fractions set their parts at full
