@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from io import BytesIO
-
 from fontTools.pens.basePen import BasePen
-from fontTools.ttLib import TTFont
 
 from glyphkit.errors import FontFormatError
 from glyphkit.fonts import FontFace
+from glyphkit.fonts.parsed import parsed_font
 from glyphkit.geometry import Bounds
 from glyphkit.outlines.models import (
     ClosePath,
@@ -71,13 +69,13 @@ def extract_outline(
     variation_coordinates: tuple[tuple[str, float], ...] = (),
 ) -> GlyphOutline:
     try:
-        font = TTFont(BytesIO(face.data), fontNumber=face.id.index, lazy=False)
-        glyph_order = font.getGlyphOrder()
-        if not 0 <= glyph_id < len(glyph_order):
-            raise FontFormatError(f"glyph id {glyph_id} is outside the font glyph order")
-        glyph_set = font.getGlyphSet(location=dict(variation_coordinates))
-        pen = _OutlinePen(glyph_set)
-        glyph_set[glyph_order[glyph_id]].draw(pen)
+        with parsed_font(face) as font:
+            glyph_order = font.getGlyphOrder()
+            if not 0 <= glyph_id < len(glyph_order):
+                raise FontFormatError(f"glyph id {glyph_id} is outside the font glyph order")
+            glyph_set = font.getGlyphSet(location=dict(variation_coordinates))
+            pen = _OutlinePen(glyph_set)
+            glyph_set[glyph_order[glyph_id]].draw(pen)
         commands = tuple(pen.commands)
         points = tuple(point for command in commands for point in _points(command))
         if points:
@@ -94,6 +92,3 @@ def extract_outline(
         )
     except (KeyError, ValueError) as exc:
         raise FontFormatError(f"cannot extract glyph {glyph_id}") from exc
-    finally:
-        if "font" in locals():
-            font.close()

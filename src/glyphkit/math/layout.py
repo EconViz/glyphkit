@@ -7,13 +7,13 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
-from io import BytesIO
 
 from fontTools.ttLib import TTFont
 
 from glyphkit.diagnostics import SourceRange
 from glyphkit.errors import ConfigurationError, UnsupportedFeatureError
 from glyphkit.fonts import FontFace, FontLibrary, FontQuery
+from glyphkit.fonts.parsed import parsed_font
 from glyphkit.geometry import Bounds
 from glyphkit.layout import Paragraph, TextLayout, TextSpan, TextStyle, layout_paragraph
 from glyphkit.math.nodes import (
@@ -875,8 +875,7 @@ def layout_math(library: FontLibrary, expression: MathNode, *, style: MathStyle)
     face = library.match(FontQuery(style.families)).face
     if not face.has_math:
         raise UnsupportedFeatureError(f"font {face.family!r} has no OpenType MATH table")
-    font = TTFont(BytesIO(face.data), fontNumber=face.id.index, lazy=False)
-    try:
+    with parsed_font(face) as font:
         data = _MathData(
             font,
             face,
@@ -888,5 +887,3 @@ def layout_math(library: FontLibrary, expression: MathNode, *, style: MathStyle)
             base_size=style.size,
         )
         return _layout(library, expression, style, data)
-    finally:
-        font.close()
