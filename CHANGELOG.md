@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0b4 — 2026-10-22
 
 - A font is parsed once and kept (the eight most recently used, keyed by the SHA-256 of the font
   bytes and the face index), instead of once per glyph outline and once per math layout. With TeX
