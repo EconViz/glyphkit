@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `import glyphkit` no longer loads `fontTools.subset` and `fontTools.varLib.instancer`; they load
+  the first time fonts are subset for embedding. Importing `glyphkit` or `glyphkit.math.layout`
+  takes about 55 ms less (best of 7: 0.156 s to 0.101 s on one machine, 0.018 s of it the bare
+  interpreter). Behaviour and the public API are unchanged. A test checks the modules stay unloaded.
 - `glyphkit.math.layout` is now a package of small modules (model, metrics, spacing, shapes,
   engine, api) instead of one 889-line file. Every name it defined is still importable from
   `glyphkit.math.layout`; layouts are unchanged. A test now fails when any file under `src/`

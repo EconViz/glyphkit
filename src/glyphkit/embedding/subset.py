@@ -6,9 +6,7 @@ import hashlib
 from collections import defaultdict
 from io import BytesIO
 
-from fontTools.subset import Options, Subsetter
 from fontTools.ttLib import TTFont
-from fontTools.varLib.instancer import instantiateVariableFont
 
 from glyphkit.diagnostics import Diagnostic
 from glyphkit.embedding.models import (
@@ -50,6 +48,10 @@ def _subset_bytes(
             raise CapabilityUnavailableError(
                 "WOFF2 output requires the portable installation profile"
             ) from exc
+    # Imported here: these modules cost tens of milliseconds and only embedding needs them.
+    from fontTools.subset import Options, Subsetter
+    from fontTools.varLib.instancer import instantiateVariableFont
+
     try:
         font = TTFont(BytesIO(face_data), fontNumber=face_index, recalcTimestamp=False)
         if variation_coordinates and "fvar" in font:
