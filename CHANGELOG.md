@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0b5 — 2026-10-26
 
 - `import glyphkit` no longer loads `fontTools.subset` and `fontTools.varLib.instancer`; they load
   the first time fonts are subset for embedding. Importing `glyphkit` or `glyphkit.math.layout`
