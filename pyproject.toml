@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "glyphkit"
-version = "1.0.0b4"
+version = "1.0.0b5"
 description = "Renderer-independent font selection, shaping, and text layout"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
