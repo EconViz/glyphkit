@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `glyphkit.math.layout` is now a package of small modules (model, metrics, spacing, shapes,
+  engine, api) instead of one 889-line file. Every name it defined is still importable from
+  `glyphkit.math.layout`; layouts are unchanged. A test now fails when any file under `src/`
+  exceeds 450 lines.
+
 ## 1.0.0b4 — 2026-10-22
 
 - A font is parsed once and kept (the eight most recently used, keyed by the SHA-256 of the font
